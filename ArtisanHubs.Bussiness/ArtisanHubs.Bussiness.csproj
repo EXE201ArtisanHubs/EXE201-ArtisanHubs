@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ArtisanHubs.Data\ArtisanHubs.Data.csproj" />
+    <ProjectReference Include="..\ArtisanHubs.DTOs\ArtisanHubs.DTOs.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\ArtistProfile\Implements\" />
+    <Folder Include="Services\ArtistProfile\Interfaces\" />
+    <Folder Include="Services\Category\Implements\" />
+    <Folder Include="Services\Category\Interfaces\" />
+    <Folder Include="Services\Order\Implements\" />
+    <Folder Include="Services\Order\Interfaces\" />
+    <Folder Include="Services\Product\Implements\" />
+    <Folder Include="Services\Product\Interfaces\" />
+    <Folder Include="Services\WorkshopPackage\Implements\" />
+    <Folder Include="Services\WorkshopPackage\Interfaces\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.9" />
+  </ItemGroup>
+
+</Project>
