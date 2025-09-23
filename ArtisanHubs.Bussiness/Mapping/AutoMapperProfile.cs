@@ -1,4 +1,6 @@
 ﻿using ArtisanHubs.Data.Entities;
+using ArtisanHubs.DTOs.DTO.Reponse.ArtistProfile;
+using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 using ArtisanHubs.DTOs.DTOs.Reponse;
 using ArtisanHubs.DTOs.DTOs.Request.Accounts;
 using AutoMapper;
@@ -16,6 +18,10 @@ namespace ArtisanHubs.Bussiness.Mapping
             CreateMap<AccountRequest, Account>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => "Active")) // default
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
+
+            CreateMap<Artistprofile, ArtistProfileResponse>();
+
+            CreateMap<ArtistProfileRequest, Artistprofile>();
         }
     }
 }
