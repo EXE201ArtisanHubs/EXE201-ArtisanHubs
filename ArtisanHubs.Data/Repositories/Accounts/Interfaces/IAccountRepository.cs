@@ -12,5 +12,6 @@ namespace ArtisanHubs.Data.Repositories.Accounts.Interfaces
     {
         Task<IEnumerable<Account>> GetAllAsync();
         Task<Account?> GetByIdAsync(int id);
+        Task<Account?> GetByEmailAsync(string email);
     }
 }
