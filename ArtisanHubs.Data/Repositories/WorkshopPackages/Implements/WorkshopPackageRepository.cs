@@ -25,9 +25,10 @@ namespace ArtisanHubs.Data.Repositories.WorkshopPackages.Implements
             
         }
 
-        public async Task<Workshoppackage?> GetWorshopPackageByIdIdAsync(int id)
+        public async Task<Workshoppackage?> GetWorshopPackageByIdIdAsync(int packageId)
         {
-            retur
+             return await _context.Workshoppackages
+                                 .FirstOrDefaultAsync(p => p.PackageId == packageId);
         }
     }
 }

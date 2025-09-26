@@ -1,6 +1,10 @@
 ﻿using ArtisanHubs.Data.Entities;
 using ArtisanHubs.DTOs.DTO.Reponse.ArtistProfile;
+using ArtisanHubs.DTOs.DTO.Reponse.Categories;
+using ArtisanHubs.DTOs.DTO.Reponse.WorkshopPackages;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
+using ArtisanHubs.DTOs.DTO.Request.Categories;
+using ArtisanHubs.DTOs.DTO.Request.WorkshopPackages;
 using ArtisanHubs.DTOs.DTOs.Reponse;
 using ArtisanHubs.DTOs.DTOs.Request.Accounts;
 using AutoMapper;
@@ -20,8 +24,14 @@ namespace ArtisanHubs.Bussiness.Mapping
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
 
             CreateMap<Artistprofile, ArtistProfileResponse>();
-
             CreateMap<ArtistProfileRequest, Artistprofile>();
+
+            CreateMap<Workshoppackage, WorkshopPackageResponse>();
+            CreateMap<WorkshopPackageRequest, Workshoppackage>();
+
+            CreateMap<CreateCategoryRequest, Category>();
+            CreateMap<UpdateCategoryRequest, Category>();
+            CreateMap<Category, CategoryResponse>();
         }
     }
 }

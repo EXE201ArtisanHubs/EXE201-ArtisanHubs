@@ -137,6 +137,7 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
                 var entity = _mapper.Map<Account>(request);
                 entity.CreatedAt = DateTime.UtcNow;
                 entity.Status = "Active";
+                entity.PasswordHash = request.Password; // Hash password
 
                 await _repo.CreateAsync(entity);
 

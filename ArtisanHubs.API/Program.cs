@@ -14,6 +14,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ArtisanHubs.Bussiness.Services.Tokens;
+using ArtisanHubs.Data.Repositories.WorkshopPackages.Interfaces;
+using ArtisanHubs.Data.Repositories.WorkshopPackages.Implements;
+using ArtisanHubs.Bussiness.Services.WorkshopPackages.Interfaces;
+using ArtisanHubs.Bussiness.Services.WorkshopPackages.Implements;
+using ArtisanHubs.Bussiness.Services.Categories.Implements;
+using ArtisanHubs.Bussiness.Services.Categories.Interfaces;
+using ArtisanHubs.Data.Repositories.Categories.Implements;
+using ArtisanHubs.Data.Repositories.Categories.Interfaces;
 namespace ArtisanHubs.API
 {
     public class Program
@@ -32,6 +40,12 @@ namespace ArtisanHubs.API
 
             builder.Services.AddScoped<IArtistProfileRepository,ArtistProfileRepository>();
             builder.Services.AddScoped<IArtistProfileService, ArtistProfileService>();
+
+            builder.Services.AddScoped<IWorkshopPackageRepository,WorkshopPackageRepository>();
+            builder.Services.AddScoped<IWorkshopPackageService, WorkshopPackageService>();
+
+            builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+            builder.Services.AddScoped<ICategoryService, CategoryService>();
 
             builder.Services.AddScoped<ITokenService, TokenService>();
 
