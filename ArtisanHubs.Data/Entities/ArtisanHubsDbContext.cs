@@ -50,7 +50,7 @@ public partial class ArtisanHubsDbContext : DbContext
             entity.HasKey(e => e.AccountId).HasName("account_pkey");
 
             entity.ToTable("account");
-
+            
             entity.HasIndex(e => e.Email, "account_email_key").IsUnique();
 
             entity.HasIndex(e => e.Username, "account_username_key").IsUnique();
@@ -70,9 +70,6 @@ public partial class ArtisanHubsDbContext : DbContext
             entity.Property(e => e.Gender)
                 .HasMaxLength(10)
                 .HasColumnName("gender");
-            entity.Property(e => e.Password)
-                .HasMaxLength(255)
-                .HasColumnName("password");
             entity.Property(e => e.Phone)
                 .HasMaxLength(20)
                 .HasColumnName("phone");
@@ -89,6 +86,9 @@ public partial class ArtisanHubsDbContext : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(100)
                 .HasColumnName("username");
+            entity.Property(e => e.PasswordHash)
+      .HasColumnName("password_hash")
+      .HasColumnType("text"); // hoặc "varchar(255)" tùy bạn
         });
 
         modelBuilder.Entity<Artistprofile>(entity =>

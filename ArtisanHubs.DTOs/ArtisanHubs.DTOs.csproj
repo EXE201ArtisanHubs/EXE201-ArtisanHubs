@@ -7,16 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="DTO\Reponse\ArtistProfile\" />
-    <Folder Include="DTO\Reponse\Category\" />
     <Folder Include="DTO\Reponse\Order\" />
-    <Folder Include="DTO\Reponse\Product\" />
-    <Folder Include="DTO\Reponse\WorkshopPackage\" />
-    <Folder Include="DTO\Request\ArtistProfile\" />
-    <Folder Include="DTO\Request\Category\" />
     <Folder Include="DTO\Request\Order\" />
     <Folder Include="DTO\Request\Product\" />
-    <Folder Include="DTO\Request\WorkshopPackage\" />
   </ItemGroup>
 
 </Project>

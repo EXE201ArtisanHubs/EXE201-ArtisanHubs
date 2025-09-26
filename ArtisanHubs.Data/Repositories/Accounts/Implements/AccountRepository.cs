@@ -26,6 +26,12 @@ namespace ArtisanHubs.Data.Repositories.Accounts.Implements
         public async Task<Account?> GetByIdAsync(int id)
         {
             return await _context.Accounts.FindAsync(id);
-        }       
+        }
+
+        public async Task<Account?> GetByEmailAsync(string email)
+        {
+            return await _context.Accounts
+                .FirstOrDefaultAsync(account => account.Email.ToLower() == email.ToLower());
+        }
     }
 }

@@ -7,16 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Repositories\ArtistProfile\Implements\" />
-    <Folder Include="Repositories\ArtistProfile\Interfaces\" />
-    <Folder Include="Repositories\Category\Implements\" />
-    <Folder Include="Repositories\Category\Interfaces\" />
     <Folder Include="Repositories\Order\Implements\" />
     <Folder Include="Repositories\Order\Interfaces\" />
     <Folder Include="Repositories\Product\Implements\" />
     <Folder Include="Repositories\Product\Interfaces\" />
-    <Folder Include="Repositories\WorkshopPackage\Implements\" />
-    <Folder Include="Repositories\WorkshopPackage\Interfaces\" />
   </ItemGroup>
 
   <ItemGroup>
