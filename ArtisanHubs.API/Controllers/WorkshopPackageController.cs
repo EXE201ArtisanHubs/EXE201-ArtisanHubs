@@ -1,5 +1,6 @@
 ﻿using ArtisanHubs.Bussiness.Services.WorkshopPackages.Interfaces;
 using ArtisanHubs.DTOs.DTO.Request.WorkshopPackages;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArtisanHubs.API.Controllers
@@ -37,7 +38,9 @@ namespace ArtisanHubs.API.Controllers
 
         /// <summary>
         /// Tạo mới một gói workshop
-        /// </summary>
+        /// </summary>\
+        /// 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreatePackage([FromBody] WorkshopPackageRequest request)
         {
@@ -56,6 +59,8 @@ namespace ArtisanHubs.API.Controllers
         /// <summary>
         /// Cập nhật một gói workshop
         /// </summary>
+        /// 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePackage(int id, [FromBody] WorkshopPackageRequest request)
         {
@@ -66,6 +71,8 @@ namespace ArtisanHubs.API.Controllers
         /// <summary>
         /// Xóa một gói workshop
         /// </summary>
+        /// 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePackage(int id)
         {

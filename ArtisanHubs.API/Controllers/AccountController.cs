@@ -1,5 +1,6 @@
 ﻿using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
+using ArtisanHubs.DTOs.DTO.Request.Accounts;
 using ArtisanHubs.DTOs.DTOs.Reponse;
 using ArtisanHubs.DTOs.DTOs.Request.Accounts;
 using Microsoft.AspNetCore.Mvc;
@@ -19,10 +20,10 @@ namespace ArtisanHubs.API.Controllers
         /// <summary>
         /// Lấy danh sách tất cả tài khoản
         /// </summary>
-        [HttpGet]     
+        [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var result = await _accountService.GetAllAccountAsync();          
+            var result = await _accountService.GetAllAccountAsync();
             return StatusCode(result.StatusCode, result); ;
         }
 
@@ -66,5 +67,14 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _accountService.LoginAsync(request);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

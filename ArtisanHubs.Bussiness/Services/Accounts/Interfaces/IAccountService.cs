@@ -19,7 +19,6 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Interfaces
         Task<ApiResponse<AccountResponse>> CreateAsync(AccountRequest request);
         Task<ApiResponse<AccountResponse?>> UpdateAsync(int id, AccountRequest request);
         Task<ApiResponse<bool>> DeleteAsync(int id);
-        Task<ApiResponse<AccountResponse>> RegisterAsync(RegisterRequest request);
         Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request);
     }
 }

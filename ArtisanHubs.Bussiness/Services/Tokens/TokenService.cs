@@ -26,9 +26,9 @@ namespace ArtisanHubs.Bussiness.Services.Tokens
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, account.AccountId.ToString()), // Dùng để lấy ID người dùng
+                new Claim(ClaimTypes.NameIdentifier, account.AccountId.ToString()),
                 new Claim(ClaimTypes.Email, account.Email),
-                new Claim(ClaimTypes.Role, account.Role) // Thêm Role vào claim
+                new Claim(ClaimTypes.Role, account.Role)
             };
 
             var credentials = new SigningCredentials(_jwtKey, SecurityAlgorithms.HmacSha512Signature);

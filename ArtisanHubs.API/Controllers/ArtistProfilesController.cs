@@ -50,8 +50,8 @@ namespace ArtisanHubs.API.Controllers
 #endif
         }
 
+        [Authorize(Roles = "Artist")]
         [HttpGet("me")]
-        //[Authorize(Roles = "Artist")]
         public async Task<IActionResult> GetMyProfile()
         {
             var accountId = GetCurrentAccountId();
@@ -62,8 +62,9 @@ namespace ArtisanHubs.API.Controllers
 
         // POST: api/artist-profiles/me
         // Tạo profile cho chính nghệ nhân đang đăng nhập
-        [HttpPost("me")]
-        //[Authorize(Roles = "Artist")]
+
+        [Authorize(Roles = "Artist")]
+        [HttpPost()]
         public async Task<IActionResult> CreateMyProfile([FromBody] ArtistProfileRequest request)
         {
             if (!ModelState.IsValid)
@@ -78,8 +79,9 @@ namespace ArtisanHubs.API.Controllers
 
         // PUT: api/artist-profiles/me
         // Cập nhật profile cho chính nghệ nhân đang đăng nhập
-        [HttpPut("me")]
-        //[Authorize(Roles = "Artist")]
+
+        [Authorize(Roles = "Artist")]
+        [HttpPut()]
         public async Task<IActionResult> UpdateMyProfile([FromBody] ArtistProfileRequest request)
         {
             if (!ModelState.IsValid)
@@ -92,9 +94,9 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-                                                                    // === CÁC ENDPOINT CÔNG KHAI HOẶC DÀNH CHO ADMIN ===
+        // === CÁC ENDPOINT CÔNG KHAI HOẶC DÀNH CHO ADMIN ===
 
-       
+
         // Lấy danh sách tất cả profile (có thể cho Admin hoặc công khai)
         [HttpGet]
         public async Task<IActionResult> GetAllProfiles()

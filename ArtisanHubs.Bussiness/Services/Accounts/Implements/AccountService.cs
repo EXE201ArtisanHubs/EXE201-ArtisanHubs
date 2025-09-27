@@ -1,4 +1,9 @@
-﻿using ArtisanHubs.API.DTOs.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
 using ArtisanHubs.Bussiness.Services.Tokens;
 using ArtisanHubs.Data.Entities;
@@ -9,11 +14,7 @@ using ArtisanHubs.DTOs.DTO.Request.Accounts;
 using ArtisanHubs.DTOs.DTOs.Reponse;
 using ArtisanHubs.DTOs.DTOs.Request.Accounts;
 using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 
 namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
 {
@@ -22,26 +23,29 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         private readonly IAccountRepository _repo;
         private readonly IMapper _mapper;
         private readonly ITokenService _tokenService;
+        private readonly IPasswordHasher<Account> _passwordHasher;
 
-        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService)
+        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher)
         {
             _repo = repo;
             _mapper = mapper;
             _tokenService = tokenService;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request)
         {
             try
             {
-                var account = await _repo.GetByEmailAsync(request.Email); // Giả sử bạn có hàm này trong repo
+                var account = await _repo.GetByEmailAsync(request.Email);
                 if (account == null)
                 {
-                    return ApiResponse<LoginResponse?>.FailResponse("Invalid email or password.", 401); // Unauthorized
+                    return ApiResponse<LoginResponse?>.FailResponse("Invalid email or password.", 401);
                 }
 
-                // Kiểm tra password
-                if (!BCrypt.Net.BCrypt.Verify(request.Password, account.PasswordHash))
+                // Verify password
+                var result = _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, request.Password);
+                if (result == PasswordVerificationResult.Failed)
                 {
                     return ApiResponse<LoginResponse?>.FailResponse("Invalid email or password.", 401);
                 }
@@ -61,37 +65,6 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             catch (Exception ex)
             {
                 return ApiResponse<LoginResponse?>.FailResponse($"Error: {ex.Message}", 500);
-            }
-        }
-
-        public async Task<ApiResponse<AccountResponse>> RegisterAsync(RegisterRequest request)
-        {
-            try
-            {
-                var existingAccount = await _repo.GetByEmailAsync(request.Email);
-                if (existingAccount != null)
-                {
-                    return ApiResponse<AccountResponse>.FailResponse("Email is already registered.", 409); // Conflict
-                }
-
-                var account = new Account
-                {
-                    Username = request.Username,
-                    Email = request.Email,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                    Role = request.Role, // Chú ý: Cần validate role ("Customer", "Artist")
-                    CreatedAt = DateTime.UtcNow,
-                    Status = "Active"
-                };
-
-                await _repo.CreateAsync(account);
-
-                var response = _mapper.Map<AccountResponse>(account);
-                return ApiResponse<AccountResponse>.SuccessResponse(response, "Registration successful.", 201);
-            }
-            catch (Exception ex)
-            {
-                return ApiResponse<AccountResponse>.FailResponse($"Error: {ex.Message}", 500);
             }
         }
 
@@ -137,7 +110,9 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
                 var entity = _mapper.Map<Account>(request);
                 entity.CreatedAt = DateTime.UtcNow;
                 entity.Status = "Active";
-                entity.PasswordHash = request.Password; // Hash password
+
+                // Hash password trước khi lưu
+                entity.PasswordHash = _passwordHasher.HashPassword(entity, request.Password);
 
                 await _repo.CreateAsync(entity);
 

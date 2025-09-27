@@ -1,100 +1,117 @@
-
+using System.Text;
+using ArtisanHubs.Bussiness.Mapping;
 using ArtisanHubs.Bussiness.Services.Accounts.Implements;
 using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
+using ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements;
+using ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces;
+using ArtisanHubs.Bussiness.Services.Categories.Implements;
+using ArtisanHubs.Bussiness.Services.Categories.Interfaces;
+using ArtisanHubs.Bussiness.Services.Tokens;
+using ArtisanHubs.Bussiness.Services.WorkshopPackages.Implements;
+using ArtisanHubs.Bussiness.Services.WorkshopPackages.Interfaces;
 using ArtisanHubs.Data.Entities;
 using ArtisanHubs.Data.Repositories.Accounts.Implements;
 using ArtisanHubs.Data.Repositories.Accounts.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using ArtisanHubs.Bussiness.Mapping;
-using ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces;
 using ArtisanHubs.Data.Repositories.ArtistProfiles.Implements;
-using ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces;
-using ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using ArtisanHubs.Bussiness.Services.Tokens;
-using ArtisanHubs.Data.Repositories.WorkshopPackages.Interfaces;
-using ArtisanHubs.Data.Repositories.WorkshopPackages.Implements;
-using ArtisanHubs.Bussiness.Services.WorkshopPackages.Interfaces;
-using ArtisanHubs.Bussiness.Services.WorkshopPackages.Implements;
-using ArtisanHubs.Bussiness.Services.Categories.Implements;
-using ArtisanHubs.Bussiness.Services.Categories.Interfaces;
+using ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces;
 using ArtisanHubs.Data.Repositories.Categories.Implements;
 using ArtisanHubs.Data.Repositories.Categories.Interfaces;
-namespace ArtisanHubs.API
-{
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
-            var configuration = builder.Configuration;
-            builder.Services.AddDbContext<ArtisanHubsDbContext>(options =>
+using ArtisanHubs.Data.Repositories.WorkshopPackages.Implements;
+using ArtisanHubs.Data.Repositories.WorkshopPackages.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<ArtisanHubsDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
 
-            builder.Services.AddScoped<IAccountRepository,AccountRepository>();
-            builder.Services.AddScoped<IAccountService,AccountService>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IArtistProfileRepository, ArtistProfileRepository>();
+builder.Services.AddScoped<IArtistProfileService, ArtistProfileService>();
+builder.Services.AddScoped<IWorkshopPackageRepository, WorkshopPackageRepository>();
+builder.Services.AddScoped<IWorkshopPackageService, WorkshopPackageService>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IPasswordHasher<Account>, PasswordHasher<Account>>();
 
-            builder.Services.AddScoped<IArtistProfileRepository,ArtistProfileRepository>();
-            builder.Services.AddScoped<IArtistProfileService, ArtistProfileService>();
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+        RoleClaimType = "role",
+        NameClaimType = "email"
+    };
+});
 
-            builder.Services.AddScoped<IWorkshopPackageRepository,WorkshopPackageRepository>();
-            builder.Services.AddScoped<IWorkshopPackageService, WorkshopPackageService>();
+builder.Services.AddControllers();
+builder.Services.AddAuthorization();
 
-            builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-            builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "ArtisanHubs API",
+        Version = "v1"
+    });
 
-            builder.Services.AddScoped<ITokenService, TokenService>();
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT token",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
+    });
 
-            builder.Services.AddControllers();
-            // Add services to the container.
-            builder.Services.AddAuthorization();
-
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            // 1. Thêm c?u hình Authentication
-            builder.Services.AddAuthentication(options =>
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            // 2. Thêm c?u hình JWT Bearer
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
+                Reference = new OpenApiReference
                 {
-                    // T? c?p token
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true, // Yêu c?u token không h?t h?n
-                    ValidateIssuerSigningKey = true, // Yêu c?u xác th?c ký hi?u c?a ng??i phát hành
-
-                    ValidIssuer = configuration["Jwt:Issuer"]!,
-                    ValidAudience = configuration["Jwt:Audience"]!,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]))
-                };
-            });
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-            app.UseAuthentication();
-            app.UseAuthorization();
-            app.MapControllers();
-            app.Run();
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
         }
-    }
+    });
+});
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+app.Run();

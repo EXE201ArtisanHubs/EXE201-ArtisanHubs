@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System.IO;
 
 namespace ArtisanHubs.Data.Entities;
 
@@ -50,7 +52,7 @@ public partial class ArtisanHubsDbContext : DbContext
             entity.HasKey(e => e.AccountId).HasName("account_pkey");
 
             entity.ToTable("account");
-            
+
             entity.HasIndex(e => e.Email, "account_email_key").IsUnique();
 
             entity.HasIndex(e => e.Username, "account_username_key").IsUnique();
@@ -88,7 +90,7 @@ public partial class ArtisanHubsDbContext : DbContext
                 .HasColumnName("username");
             entity.Property(e => e.PasswordHash)
       .HasColumnName("password_hash")
-      .HasColumnType("text"); // hoặc "varchar(255)" tùy bạn
+      .HasColumnType("text");
         });
 
         modelBuilder.Entity<Artistprofile>(entity =>
