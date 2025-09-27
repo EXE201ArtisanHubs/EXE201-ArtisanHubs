@@ -1,0 +1,192 @@
+﻿using ArtisanHubs.API.DTOs.Common;
+using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
+using ArtisanHubs.Bussiness.Services.Tokens;
+using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Repositories.Accounts.Implements;
+using ArtisanHubs.Data.Repositories.Accounts.Interfaces;
+using ArtisanHubs.DTOs.DTO.Reponse.Accounts;
+using ArtisanHubs.DTOs.DTO.Request.Accounts;
+using ArtisanHubs.DTOs.DTOs.Reponse;
+using ArtisanHubs.DTOs.DTOs.Request.Accounts;
+using AutoMapper;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
+{
+    public class AccountService : IAccountService
+    {
+        private readonly IAccountRepository _repo;
+        private readonly IMapper _mapper;
+        private readonly ITokenService _tokenService;
+
+        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService)
+        {
+            _repo = repo;
+            _mapper = mapper;
+            _tokenService = tokenService;
+        }
+
+        public async Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request)
+        {
+            try
+            {
+                var account = await _repo.GetByEmailAsync(request.Email); // Giả sử bạn có hàm này trong repo
+                if (account == null)
+                {
+                    return ApiResponse<LoginResponse?>.FailResponse("Invalid email or password.", 401); // Unauthorized
+                }
+
+                // Kiểm tra password
+                if (!BCrypt.Net.BCrypt.Verify(request.Password, account.PasswordHash))
+                {
+                    return ApiResponse<LoginResponse?>.FailResponse("Invalid email or password.", 401);
+                }
+
+                var token = _tokenService.CreateToken(account);
+
+                var response = new LoginResponse
+                {
+                    AccountId = account.AccountId,
+                    Email = account.Email,
+                    Role = account.Role,
+                    Token = token
+                };
+
+                return ApiResponse<LoginResponse?>.SuccessResponse(response, "Login successful.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<LoginResponse?>.FailResponse($"Error: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponse<AccountResponse>> RegisterAsync(RegisterRequest request)
+        {
+            try
+            {
+                var existingAccount = await _repo.GetByEmailAsync(request.Email);
+                if (existingAccount != null)
+                {
+                    return ApiResponse<AccountResponse>.FailResponse("Email is already registered.", 409); // Conflict
+                }
+
+                var account = new Account
+                {
+                    Username = request.Username,
+                    Email = request.Email,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                    Role = request.Role, // Chú ý: Cần validate role ("Customer", "Artist")
+                    CreatedAt = DateTime.UtcNow,
+                    Status = "Active"
+                };
+
+                await _repo.CreateAsync(account);
+
+                var response = _mapper.Map<AccountResponse>(account);
+                return ApiResponse<AccountResponse>.SuccessResponse(response, "Registration successful.", 201);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<AccountResponse>.FailResponse($"Error: {ex.Message}", 500);
+            }
+        }
+
+        // Lấy tất cả Account
+        public async Task<ApiResponse<IEnumerable<AccountResponse>>> GetAllAccountAsync()
+        {
+            try
+            {
+                var accounts = await _repo.GetAllAsync();
+                var response = _mapper.Map<IEnumerable<AccountResponse>>(accounts);
+
+                return ApiResponse<IEnumerable<AccountResponse>>.SuccessResponse(response, "Get all accounts successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<IEnumerable<AccountResponse>>.FailResponse($"Error: {ex.Message}", 500);
+            }
+        }
+
+        // Lấy Account theo Id
+        public async Task<ApiResponse<AccountResponse?>> GetByIdAsync(int id)
+        {
+            try
+            {
+                var account = await _repo.GetByIdAsync(id);
+                if (account == null)
+                    return ApiResponse<AccountResponse?>.FailResponse("Account not found", 404);
+
+                var response = _mapper.Map<AccountResponse>(account);
+                return ApiResponse<AccountResponse?>.SuccessResponse(response, "Get account successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<AccountResponse?>.FailResponse($"Error: {ex.Message}", 500);
+            }
+        }
+
+        // Tạo mới Account
+        public async Task<ApiResponse<AccountResponse>> CreateAsync(AccountRequest request)
+        {
+            try
+            {
+                var entity = _mapper.Map<Account>(request);
+                entity.CreatedAt = DateTime.UtcNow;
+                entity.Status = "Active";
+                entity.PasswordHash = request.Password; // Hash password
+
+                await _repo.CreateAsync(entity);
+
+                var response = _mapper.Map<AccountResponse>(entity);
+                return ApiResponse<AccountResponse>.SuccessResponse(response, "Create account successfully", 201);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<AccountResponse>.FailResponse($"Error: {ex.Message}", 500);
+            }
+        }
+
+        // Cập nhật Account
+        public async Task<ApiResponse<AccountResponse?>> UpdateAsync(int id, AccountRequest request)
+        {
+            try
+            {
+                var existing = await _repo.GetByIdAsync(id);
+                if (existing == null) return ApiResponse<AccountResponse?>.FailResponse("Account not found", 404);
+
+                _mapper.Map(request, existing);
+                existing.UpdatedAt = DateTime.UtcNow;
+
+                await _repo.UpdateAsync(existing);
+
+                var response = _mapper.Map<AccountResponse>(existing);
+                return ApiResponse<AccountResponse?>.SuccessResponse(response, "Update account successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<AccountResponse?>.FailResponse($"Error: {ex.Message}", 500);
+            }
+        }
+
+        // Xoá Account
+        public async Task<ApiResponse<bool>> DeleteAsync(int id)
+        {
+            try
+            {
+                var account = await _repo.GetByIdAsync(id);
+                if (account == null) return ApiResponse<bool>.FailResponse("Account not found", 404);
+
+                await _repo.RemoveAsync(account);
+                return ApiResponse<bool>.SuccessResponse(true, "Delete account successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<bool>.FailResponse($"Error: {ex.Message}", 500);
+            }
+        }
+    }
+}
