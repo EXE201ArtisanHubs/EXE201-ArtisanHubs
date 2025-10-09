@@ -3,6 +3,7 @@ using System;
 using ArtisanHubs.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ArtisanHubs.Data.Migrations
 {
     [DbContext(typeof(ArtisanHubsDbContext))]
-    partial class ArtisanHubsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251004094425_AddForumEntities")]
+    partial class AddForumEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,16 +69,10 @@ namespace ArtisanHubs.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
-                    b.Property<string>("PasswordResetToken")
-                        .HasColumnType("text");
-
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("phone");
-
-                    b.Property<DateTime?>("ResetTokenExpires")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Role")
                         .IsRequired()

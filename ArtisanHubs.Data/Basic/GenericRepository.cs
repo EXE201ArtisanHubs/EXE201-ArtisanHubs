@@ -1,5 +1,6 @@
 ﻿using ArtisanHubs.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace ArtisanHubs.Data.Basic
 {
@@ -39,6 +40,11 @@ namespace ArtisanHubs.Data.Basic
             _context.Set<T>().Remove(entity);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<T?> GetByConditionAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _context.Set<T>().FirstOrDefaultAsync(predicate);
         }
     }
 }

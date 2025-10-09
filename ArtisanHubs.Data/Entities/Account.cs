@@ -36,4 +36,6 @@ public partial class Account
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+    public string? PasswordResetToken { get; set; }
+    public DateTime? ResetTokenExpires { get; set; }
 }

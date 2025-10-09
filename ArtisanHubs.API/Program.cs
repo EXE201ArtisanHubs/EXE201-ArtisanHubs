@@ -32,6 +32,12 @@ using ArtisanHubs.Data.Repositories.Carts.Interfaces;
 using ArtisanHubs.Data.Repositories.Carts.Implements;
 using ArtisanHubs.Bussiness.Services.Carts.Interfaces;
 using ArtisanHubs.Bussiness.Services.Carts.Implements;
+using ArtisanHubs.Data.Repositories.Forums.Interfaces;
+using ArtisanHubs.Data.Repositories.Forums.Implements;
+using ArtisanHubs.Bussiness.Services.Forums.Interfaces;
+using ArtisanHubs.Bussiness.Services.Forums.Implements;
+using ArtisanHubs.Bussiness.Services.Shared;
+using ArtisanHubs.Bussiness.Settings;
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -60,6 +66,18 @@ builder.Services.AddScoped<IProductService, ProductService>();
 
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICartService, CartService>();
+
+builder.Services.AddScoped<IForumTopicRepository, ForumTopicRepository>();
+builder.Services.AddScoped<IForumTopicService, ForumTopicService>();
+
+builder.Services.AddScoped<IForumThreadRepository, ForumThreadRepository>();
+builder.Services.AddScoped<IForumThreadService, ForumThreadService>();
+
+builder.Services.AddScoped<IForumPostRepository, ForumPostRepository>();
+builder.Services.AddScoped<IForumPostService, ForumPostService>();
+
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+builder.Services.AddTransient<IEmailService, SendGridEmailService>();
 
 builder.Services.AddScoped<IPasswordHasher<Account>, PasswordHasher<Account>>();
 builder.Services.AddScoped<ITokenService, TokenService>();

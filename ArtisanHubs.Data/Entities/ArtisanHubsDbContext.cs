@@ -46,6 +46,9 @@ public partial class ArtisanHubsDbContext : DbContext
     public virtual DbSet<Workshoppackage> Workshoppackages { get; set; }
     public virtual DbSet<Cart> Carts { get; set; }
     public virtual DbSet<CartItem> CartItems { get; set; }
+    public virtual DbSet<ForumTopic> ForumTopics { get; set; }
+    public virtual DbSet<ForumThread> ForumThreads { get; set; }
+    public virtual DbSet<ForumPost> ForumPosts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

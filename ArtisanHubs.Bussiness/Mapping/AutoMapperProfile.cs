@@ -2,10 +2,12 @@
 using ArtisanHubs.DTOs.DTO.Reponse.ArtistProfile;
 using ArtisanHubs.DTOs.DTO.Reponse.Carts;
 using ArtisanHubs.DTOs.DTO.Reponse.Categories;
+using ArtisanHubs.DTOs.DTO.Reponse.Forums;
 using ArtisanHubs.DTOs.DTO.Reponse.Products;
 using ArtisanHubs.DTOs.DTO.Reponse.WorkshopPackages;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 using ArtisanHubs.DTOs.DTO.Request.Categories;
+using ArtisanHubs.DTOs.DTO.Request.Forums;
 using ArtisanHubs.DTOs.DTO.Request.Products;
 using ArtisanHubs.DTOs.DTO.Request.WorkshopPackages;
 using ArtisanHubs.DTOs.DTOs.Reponse;
@@ -57,6 +59,18 @@ namespace ArtisanHubs.Bussiness.Mapping
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
                 .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Product.Price))
                 .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.Product.Images));
+
+
+            CreateMap<CreateForumThreadRequest, ForumThread>();
+            CreateMap<CreateForumTopicRequest, ForumTopic>();
+            CreateMap<Account, AuthorResponse>();
+            CreateMap<UpdateForumThreadRequest, ForumThread>();
+            CreateMap<ForumPost, ForumPostResponse>()
+            .ForMember(dest => dest.Author, opt => opt.MapFrom(src => src.Author));
+            CreateMap<ForumThread, ForumThreadResponse>()
+           .ForMember(dest => dest.Author, opt => opt.MapFrom(src => src.Author))
+           .ForMember(dest => dest.Posts, opt => opt.MapFrom(src => src.Posts));
+            CreateMap<ForumTopic, ForumTopicResponse>();
         }
     }
 }   

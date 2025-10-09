@@ -99,5 +99,27 @@ namespace ArtisanHubs.API.Controllers
             var result = await _accountService.LoginAsync(request);
             return StatusCode(result.StatusCode, result);
         }
+
+        /// <summary>
+        /// Bắt đầu quy trình quên mật khẩu
+        /// </summary>
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var result = await _accountService.ForgotPasswordAsync(request);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        /// <summary>
+        /// Hoàn tất quy trình quên mật khẩu với token và mật khẩu mới
+        /// </summary>
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var result = await _accountService.ResetPasswordAsync(request);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

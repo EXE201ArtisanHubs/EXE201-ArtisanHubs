@@ -26,9 +26,9 @@ namespace ArtisanHubs.Data.Repositories.Products.Implements
                                   .Where(p => p.ArtistId == artistId)
                                   .ToListAsync();
         }
+
         public async Task<bool> ProductExistsByNameAsync(int artistId, string productName)
         {
-            // Chuyển cả hai về chữ thường để so sánh không phân biệt hoa/thường
             var normalizedProductName = productName.ToLower();
 
             return await _context.Products
@@ -38,7 +38,7 @@ namespace ArtisanHubs.Data.Repositories.Products.Implements
         public async Task<Product?> GetProductWithDetailsAsync(int productId)
         {
             return await _context.Products
-                                 .Include(p => p.Category) // <-- THÊM DÒNG NÀY
+                                 .Include(p => p.Category)
                                  .FirstOrDefaultAsync(p => p.ProductId == productId);
         }
 

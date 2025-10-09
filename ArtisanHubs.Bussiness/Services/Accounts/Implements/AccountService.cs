@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
+using ArtisanHubs.Bussiness.Services.Shared;
 using ArtisanHubs.Bussiness.Services.Tokens;
 using ArtisanHubs.Data.Entities;
 using ArtisanHubs.Data.Repositories.Accounts.Implements;
@@ -24,13 +26,15 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         private readonly IMapper _mapper;
         private readonly ITokenService _tokenService;
         private readonly IPasswordHasher<Account> _passwordHasher;
+        private readonly IEmailService _emailService;
 
-        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher)
+        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher, IEmailService emailService)
         {
             _repo = repo;
             _mapper = mapper;
             _tokenService = tokenService;
             _passwordHasher = passwordHasher;
+            _emailService = emailService;
         }
 
         public async Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request)
@@ -166,6 +170,58 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             {
                 return ApiResponse<bool>.FailResponse($"Error: {ex.Message}", 500);
             }
+        }
+
+        public async Task<ApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            var account = await _repo.GetByConditionAsync(a => a.Email == request.Email);
+
+            if (account != null)
+            {
+                // 1. Tạo token ngẫu nhiên, an toàn
+                var tokenBytes = RandomNumberGenerator.GetBytes(64);
+                var resetToken = Convert.ToBase64String(tokenBytes)
+                                        .Replace("/", "-")
+                                        .Replace("+", "_")
+                                        .Replace("=", ""); // URL safe token
+
+                // 2. Đặt thời gian hết hạn (ví dụ: 15 phút)
+                account.PasswordResetToken = resetToken;
+                account.ResetTokenExpires = DateTime.UtcNow.AddMinutes(15);
+
+                await _repo.UpdateAsync(account);
+
+                // 3. Gửi email
+                // Quan trọng: URL này phải trỏ đến trang Reset Password trên Frontend của bạn
+                // Thay 3000 bằng cổng thực tế của frontend bạn
+                var resetLink = $"http://localhost:3000/reset-password?token={resetToken}";
+                await _emailService.SendPasswordResetEmailAsync(account.Email, resetLink);
+            }
+
+            return ApiResponse<object>.SuccessResponse(null, "If an account with that email exists, a password reset link has been sent.");
+        }
+
+        public async Task<ApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            var account = await _repo.GetByConditionAsync(a => a.PasswordResetToken == request.Token);
+
+            if (account == null || account.ResetTokenExpires < DateTime.UtcNow)
+            {
+                return ApiResponse<object>.FailResponse("Invalid or expired password reset token.", 400);
+            }
+
+            // --- SỬA LẠI PHẦN NÀY ---
+
+            // Dùng _passwordHasher để hash mật khẩu mới, giống hệt như lúc đăng ký
+            account.PasswordHash = _passwordHasher.HashPassword(account, request.NewPassword);
+
+            // Vô hiệu hóa token
+            account.PasswordResetToken = null;
+            account.ResetTokenExpires = null;
+
+            _repo.UpdateAsync(account);
+
+            return ApiResponse<object>.SuccessResponse(null, "Password has been reset successfully.");
         }
     }
 }
