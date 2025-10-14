@@ -67,7 +67,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Customer")]
+        [Authorize]
         [HttpGet("customer/{productId}")]
         public async Task<IActionResult> GetProductByIdForCustomer(int productId)
         {
@@ -75,7 +75,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Artist,Customer")]
+        [Authorize]
         [HttpGet("artist/{artistId}/products")]
         public async Task<IActionResult> GetProductsByArtist(int artistId)
         {
@@ -122,7 +122,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Customer")]
+        [Authorize]
         [HttpGet("category/{categoryId}")]
         public async Task<IActionResult> GetProductsByCategoryIdForCustomer(int categoryId)
         {

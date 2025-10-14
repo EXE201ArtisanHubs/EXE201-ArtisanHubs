@@ -10,5 +10,6 @@ namespace ArtisanHubs.Bussiness.Services.Tokens
     public interface ITokenService
     {
         string CreateToken(Account account);
+        string GenerateJwtToken(Account user);
     }
 }

@@ -121,5 +121,13 @@ namespace ArtisanHubs.API.Controllers
             var result = await _accountService.ResetPasswordAsync(request);
             return StatusCode(result.StatusCode, result);
         }
+
+        [HttpPost("google-login")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            var result = await _accountService.LoginWithGoogleAsync(request);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }
