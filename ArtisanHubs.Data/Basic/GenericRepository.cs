@@ -7,10 +7,11 @@ namespace ArtisanHubs.Data.Basic
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         protected readonly ArtisanHubsDbContext _context;
-
+        protected readonly DbSet<T> _dbSet;
         public GenericRepository(ArtisanHubsDbContext context)
         {
             _context = context;
+            _dbSet = context.Set<T>();
         }
 
         public async Task<List<T>> GetAllAsync()
@@ -45,6 +46,10 @@ namespace ArtisanHubs.Data.Basic
         public async Task<T?> GetByConditionAsync(Expression<Func<T, bool>> predicate)
         {
             return await _context.Set<T>().FirstOrDefaultAsync(predicate);
+        }
+        public IQueryable<T> GetQueryable()
+        {
+            return _dbSet.AsQueryable();
         }
     }
 }

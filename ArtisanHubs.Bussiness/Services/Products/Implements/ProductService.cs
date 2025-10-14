@@ -56,17 +56,17 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             return ApiResponse<bool>.SuccessResponse(true, "Product deleted successfully.");
         }
 
-        public async Task<ApiResponse<IEnumerable<ProductResponse>>> GetMyProductsAsync(int artistId)
+        public async Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetMyProductsAsync(int artistId)
         {
             try
             {
                 var products = await _productRepo.GetProductsByArtistIdAsync(artistId);
-                var response = _mapper.Map<IEnumerable<ProductResponse>>(products);
-                return ApiResponse<IEnumerable<ProductResponse>>.SuccessResponse(response, "Get products successfully.");
+                var response = _mapper.Map<IEnumerable<ProductForCustomerResponse>>(products);
+                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.SuccessResponse(response, "Get products successfully.");
             }
             catch (Exception ex)
             {
-                return ApiResponse<IEnumerable<ProductResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
+                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
 

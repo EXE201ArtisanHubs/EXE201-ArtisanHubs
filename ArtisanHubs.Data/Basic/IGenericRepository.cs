@@ -10,6 +10,7 @@ namespace ArtisanHubs.Data.Basic
     public interface IGenericRepository<T> where T : class
     {
         Task<List<T>> GetAllAsync();
+        IQueryable<T> GetQueryable();
         Task<T?> GetByIdAsync(int id);
         Task<int> CreateAsync(T entity);
         Task<int> UpdateAsync(T entity);

@@ -111,6 +111,12 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         {
             try
             {
+                var existing = await _repo.GetByEmailAsync(request.Email);
+                if (existing != null)
+                {
+                    return ApiResponse<AccountResponse>.FailResponse("Email already in use", 409); // 409 Conflict
+                }
+
                 if (request.Role != "Customer" && request.Role != "Artist" && request.Role != "Admin")
                 {
                     return ApiResponse<AccountResponse>.FailResponse("Invalid role specified. Must be 'Customer' or 'Artist' or 'Admin'.", 400); // 400 Bad Request
