@@ -23,6 +23,8 @@ namespace ArtisanHubs.Data.Repositories.Products.Implements
         {
             return await _context.Products
                                   .Include(p => p.Category)
+                                  .Include(p => p.Artist)
+                                  .Include(p => p.FavoriteProducts)
                                   .Where(p => p.ArtistId == artistId)
                                   .ToListAsync();
         }
@@ -39,6 +41,8 @@ namespace ArtisanHubs.Data.Repositories.Products.Implements
         {
             return await _context.Products
                                  .Include(p => p.Category)
+                                 .Include(p => p.Artist)
+                                 .Include(p=> p.FavoriteProducts)
                                  .FirstOrDefaultAsync(p => p.ProductId == productId);
         }
 

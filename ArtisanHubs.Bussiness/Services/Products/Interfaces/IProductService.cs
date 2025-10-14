@@ -11,7 +11,7 @@ namespace ArtisanHubs.Bussiness.Services.Products.Interfaces
 {
     public interface IProductService
     {      
-        Task<ApiResponse<IEnumerable<ProductResponse>>> GetMyProductsAsync(int artistId);     
+        Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetMyProductsAsync(int artistId);     
         Task<ApiResponse<ProductResponse?>> GetMyProductByIdAsync(int productId, int artistId);        
         Task<ApiResponse<ProductResponse>> CreateProductAsync(int artistId, CreateProductRequest request);       
         Task<ApiResponse<ProductResponse?>> UpdateProductAsync(int productId, int artistId, UpdateProductRequest request);

@@ -44,12 +44,27 @@ namespace ArtisanHubs.Bussiness.Mapping
             CreateMap<Product, ProductResponse>()
                .ForMember(dest => dest.CategoryName,
                           opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null));
+            //CreateMap<Product, ProductForCustomerResponse>()
+            //.ForMember(dest => dest.CategoryName,
+            //           opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null))
+            //.ForMember(dest => dest.ArtistName,
+            //           opt => opt.MapFrom(src => src.Artist != null ? src.Artist.ArtistName : null));
             CreateMap<Product, ProductForCustomerResponse>()
-            .ForMember(dest => dest.CategoryName,
-                       opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null))
-            .ForMember(dest => dest.ArtistName,
-                       opt => opt.MapFrom(src => src.Artist != null ? src.Artist.ArtistName : null));
+    // Map tên danh mục
+    .ForMember(dest => dest.CategoryName,
+        opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null)) // <-- Sửa lại ở đây
 
+    // Map tên nghệ nhân
+    .ForMember(dest => dest.ArtistName,
+        opt => opt.MapFrom(src => src.Artist != null ? src.Artist.ArtistName : null))     // <-- Và ở đây
+
+    // Tính rating trung bình, kiểm tra để tránh lỗi chia cho 0
+    .ForMember(dest => dest.AverageRating,
+        opt => opt.MapFrom(src => src.Feedbacks.Any() ? src.Feedbacks.Average(f => f.Rating) : (double?)null))
+
+    // Đếm số lượt yêu thích
+    .ForMember(dest => dest.FavoriteCount,
+        opt => opt.MapFrom(src => src.FavoriteProducts.Count));
 
             CreateMap<Cart, CartResponse>()
     .ForMember(dest => dest.CartId, opt => opt.MapFrom(src => src.Id))
@@ -71,6 +86,7 @@ namespace ArtisanHubs.Bussiness.Mapping
            .ForMember(dest => dest.Author, opt => opt.MapFrom(src => src.Author))
            .ForMember(dest => dest.Posts, opt => opt.MapFrom(src => src.Posts));
             CreateMap<ForumTopic, ForumTopicResponse>();
+            CreateMap<CreateForumPostRequest, ForumPost>();
         }
     }
 }   
