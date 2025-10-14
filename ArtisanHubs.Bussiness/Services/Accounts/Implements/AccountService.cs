@@ -16,7 +16,9 @@ using ArtisanHubs.DTOs.DTO.Request.Accounts;
 using ArtisanHubs.DTOs.DTOs.Reponse;
 using ArtisanHubs.DTOs.DTOs.Request.Accounts;
 using AutoMapper;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 
 namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
 {
@@ -27,14 +29,16 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         private readonly ITokenService _tokenService;
         private readonly IPasswordHasher<Account> _passwordHasher;
         private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher, IEmailService emailService)
+        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher, IEmailService emailService, IConfiguration configuration)
         {
             _repo = repo;
             _mapper = mapper;
             _tokenService = tokenService;
             _passwordHasher = passwordHasher;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
         public async Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request)
@@ -228,6 +232,48 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             _repo.UpdateAsync(account);
 
             return ApiResponse<object>.SuccessResponse(null, "Password has been reset successfully.");
+        }
+
+        public async Task<ApiResponse<LoginResponse>> LoginWithGoogleAsync(GoogleLoginRequest request)
+        {
+            try
+            {
+                var googleClientId = _configuration["Google:ClientId"];
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string> { googleClientId }
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+                var user = await _repo.GetByEmailAsync(payload.Email);
+
+                if (user == null)
+                {
+                    user = new Account
+                    {
+                        Email = payload.Email,
+                        Username = payload.Name,
+                        Avatar = payload.Picture,
+                        Role = "Customer",
+                        Status = "active",
+                        PasswordHash = "" // Không cần mật khẩu
+                    };
+                    await _repo.CreateAsync(user);
+                }
+
+                var token = _tokenService.GenerateJwtToken(user);
+                var loginResponse = new LoginResponse { Token = token, Username = user.Username, Role = user.Role };
+
+                return ApiResponse<LoginResponse>.SuccessResponse(loginResponse, "Login successfully.");
+            }
+            catch (InvalidJwtException)
+            {
+                return ApiResponse<LoginResponse>.FailResponse("Invalid Google token.", 401);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<LoginResponse>.FailResponse($"An unexpected error occurred: {ex.Message}", 500);
+            }
         }
     }
 }

@@ -76,7 +76,6 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             {
                 var product = await _productRepo.GetProductWithDetailsAsync(productId);
 
-                // Kiểm tra sản phẩm có tồn tại không VÀ có thuộc về đúng nghệ nhân không
                 if (product == null || product.ArtistId != artistId)
                 {
                     return ApiResponse<ProductResponse?>.FailResponse("Product not found or you don't have permission.", 404);
