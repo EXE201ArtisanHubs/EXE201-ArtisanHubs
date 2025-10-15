@@ -49,7 +49,7 @@ namespace ArtisanHubs.API.Controllers
         // Tạo profile cho chính nghệ nhân đang đăng nhập
         [Authorize(Roles = "Artist")]
         [HttpPost()]
-        public async Task<IActionResult> CreateMyProfile([FromBody] ArtistProfileRequest request)
+        public async Task<IActionResult> CreateMyProfile([FromForm] ArtistProfileRequest request)
         {
             if (!ModelState.IsValid)
             {

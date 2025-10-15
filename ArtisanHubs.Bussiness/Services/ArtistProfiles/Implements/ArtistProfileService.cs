@@ -17,11 +17,13 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
     {
         private readonly IArtistProfileRepository _repo;
         private readonly IMapper _mapper;
+        private readonly PhotoService _photoService;
 
-        public ArtistProfileService(IArtistProfileRepository repo, IMapper mapper)
+        public ArtistProfileService(IArtistProfileRepository repo, IMapper mapper, PhotoService photoService)
         {
             _repo = repo;
             _mapper = mapper;
+            _photoService = photoService;
         }
 
         // Lấy profile của nghệ nhân đang đăng nhập
@@ -58,6 +60,16 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
                 var entity = _mapper.Map<Artistprofile>(request);
                 entity.AccountId = accountId;
                 entity.CreatedAt = DateTime.UtcNow; // Gán thời gian tạo
+
+                // Handle image upload
+                if (request.ProfileImage != null)
+                {
+                    var imageUrl = await _photoService.UploadImageAsync(request.ProfileImage);
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        entity.ProfileImage = imageUrl; // Adjust property name as needed
+                    }
+                }
 
                 await _repo.CreateAsync(entity);
 
