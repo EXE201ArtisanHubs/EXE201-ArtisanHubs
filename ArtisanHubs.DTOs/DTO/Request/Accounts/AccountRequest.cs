@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace ArtisanHubs.DTOs.DTOs.Request.Accounts
 {
@@ -25,8 +26,9 @@ namespace ArtisanHubs.DTOs.DTOs.Request.Accounts
         // Các thuộc tính không bắt buộc vẫn giữ nguyên là nullable
         public string? Phone { get; set; }
         public string? Address { get; set; }
-        public string? Avatar { get; set; }
+        //public string? Avatar { get; set; }
         public string? Gender { get; set; }
         public DateOnly? Dob { get; set; }
+        public IFormFile? AvatarFile { get; set; }
     }
 }

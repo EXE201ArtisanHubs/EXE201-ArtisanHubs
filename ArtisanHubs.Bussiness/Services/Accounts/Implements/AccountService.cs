@@ -9,6 +9,7 @@ using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
 using ArtisanHubs.Bussiness.Services.Shared;
 using ArtisanHubs.Bussiness.Services.Tokens;
 using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.Data.Repositories.Accounts.Implements;
 using ArtisanHubs.Data.Repositories.Accounts.Interfaces;
 using ArtisanHubs.DTOs.DTO.Reponse.Accounts;
@@ -16,7 +17,9 @@ using ArtisanHubs.DTOs.DTO.Request.Accounts;
 using ArtisanHubs.DTOs.DTOs.Reponse;
 using ArtisanHubs.DTOs.DTOs.Request.Accounts;
 using AutoMapper;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 
 namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
 {
@@ -27,14 +30,16 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         private readonly ITokenService _tokenService;
         private readonly IPasswordHasher<Account> _passwordHasher;
         private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher, IEmailService emailService)
+        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher, IEmailService emailService, IConfiguration configuration)
         {
             _repo = repo;
             _mapper = mapper;
             _tokenService = tokenService;
             _passwordHasher = passwordHasher;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
         public async Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request)
@@ -72,21 +77,21 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             }
         }
 
-        // Lấy tất cả Account
-        public async Task<ApiResponse<IEnumerable<AccountResponse>>> GetAllAccountAsync()
-        {
-            try
-            {
-                var accounts = await _repo.GetAllAsync();
-                var response = _mapper.Map<IEnumerable<AccountResponse>>(accounts);
+        //// Lấy tất cả Account
+        //public async Task<ApiResponse<IEnumerable<AccountResponse>>> GetAllAccountAsync()
+        //{
+        //    try
+        //    {
+        //        var accounts = await _repo.GetAllAsync();
+        //        var response = _mapper.Map<IEnumerable<AccountResponse>>(accounts);
 
-                return ApiResponse<IEnumerable<AccountResponse>>.SuccessResponse(response, "Get all accounts successfully");
-            }
-            catch (Exception ex)
-            {
-                return ApiResponse<IEnumerable<AccountResponse>>.FailResponse($"Error: {ex.Message}", 500);
-            }
-        }
+        //        return ApiResponse<IEnumerable<AccountResponse>>.SuccessResponse(response, "Get all accounts successfully");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return ApiResponse<IEnumerable<AccountResponse>>.FailResponse($"Error: {ex.Message}", 500);
+        //    }
+        //}
 
         // Lấy Account theo Id
         public async Task<ApiResponse<AccountResponse?>> GetByIdAsync(int id)
@@ -107,20 +112,35 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         }
 
         // Tạo mới Account
-        public async Task<ApiResponse<AccountResponse>> CreateAsync(AccountRequest request)
+        public async Task<ApiResponse<AccountResponse>> CreateAsync(AccountRequest request, string? avatarUrl = null)
         {
             try
             {
-                if (request.Role != "Customer" && request.Role != "Artist" && request.Role != "Admin")
+                var existing = await _repo.GetByEmailAsync(request.Email);
+                if (existing != null)
                 {
-                    return ApiResponse<AccountResponse>.FailResponse("Invalid role specified. Must be 'Customer' or 'Artist' or 'Admin'.", 400); // 400 Bad Request
+                    return ApiResponse<AccountResponse>.FailResponse("Email already in use", 409); // 409 Conflict
                 }
+
+                if (request.Role != "Customer" && request.Role != "Artist" && request.Role != "Admin")
+                if (request.Role != "Customer" && request.Role != "Artist")
+                {
+                    return ApiResponse<AccountResponse>.FailResponse(
+                        "Invalid role specified. Must be 'Customer' or 'Artist'.", 400
+                    );
+                }
+
                 var entity = _mapper.Map<Account>(request);
                 entity.CreatedAt = DateTime.UtcNow;
                 entity.Status = "Active";
-               
-                // Hash password trước khi lưu
                 entity.PasswordHash = _passwordHasher.HashPassword(entity, request.Password);
+
+                // Set default avatar if none provided
+                if (string.IsNullOrEmpty(avatarUrl))
+                {
+                    avatarUrl = "https://res-console.cloudinary.com/artisanhubs2025/thumbnails/v1/image/upload/v1760527061/YmM0Mzk4NzE0MTc2MjE4MzZhMGVlZWE3NjhkNjA5NDRfemRmeW9w/drilldown";
+                }
+                entity.Avatar = avatarUrl;
 
                 await _repo.CreateAsync(entity);
 
@@ -222,6 +242,68 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             _repo.UpdateAsync(account);
 
             return ApiResponse<object>.SuccessResponse(null, "Password has been reset successfully.");
+        }
+
+        public async Task<ApiResponse<LoginResponse>> LoginWithGoogleAsync(GoogleLoginRequest request)
+        {
+            try
+            {
+                var googleClientId = _configuration["Google:ClientId"];
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string> { googleClientId }
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+                var user = await _repo.GetByEmailAsync(payload.Email);
+
+                if (user == null)
+                {
+                    user = new Account
+                    {
+                        Email = payload.Email,
+                        Username = payload.Name,
+                        Avatar = payload.Picture,
+                        Role = "Customer",
+                        Status = "active",
+                        PasswordHash = "" // Không cần mật khẩu
+                    };
+                    await _repo.CreateAsync(user);
+                }
+
+                var token = _tokenService.GenerateJwtToken(user);
+                var loginResponse = new LoginResponse { Token = token, Username = user.Username, Role = user.Role };
+
+                return ApiResponse<LoginResponse>.SuccessResponse(loginResponse, "Login successfully.");
+            }
+            catch (InvalidJwtException)
+            {
+                return ApiResponse<LoginResponse>.FailResponse("Invalid Google token.", 401);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<LoginResponse>.FailResponse($"An unexpected error occurred: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponse<IPaginate<Account>>> GetAllAccountAsync(int page, int size, string? searchTerm = null)
+        {
+            try
+            {
+                // Lấy danh sách có phân trang
+                var result = await _repo.GetPagedAsync(null, page, size, searchTerm);
+
+                // ✅ Trả về gói trong ApiResponse mà KHÔNG ép kiểu
+                return ApiResponse<IPaginate<Account>>.SuccessResponse(
+                    result,
+                    "Get paginated accounts successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                // ✅ Bắt lỗi và trả về fail response
+                return ApiResponse<IPaginate<Account>>.FailResponse($"Error: {ex.Message}");
+            }
         }
     }
 }

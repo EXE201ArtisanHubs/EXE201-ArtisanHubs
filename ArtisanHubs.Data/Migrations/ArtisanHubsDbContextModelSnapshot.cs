@@ -445,6 +445,24 @@ namespace ArtisanHubs.Data.Migrations
                     b.ToTable("commission", (string)null);
                 });
 
+            modelBuilder.Entity("ArtisanHubs.Data.Entities.FavoriteProduct", b =>
+                {
+                    b.Property<int>("AccountId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("AccountId", "ProductId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("FavoriteProducts");
+                });
+
             modelBuilder.Entity("ArtisanHubs.Data.Entities.Feedback", b =>
                 {
                     b.Property<int>("FeedbackId")
@@ -1107,6 +1125,25 @@ namespace ArtisanHubs.Data.Migrations
                     b.Navigation("Workshop");
                 });
 
+            modelBuilder.Entity("ArtisanHubs.Data.Entities.FavoriteProduct", b =>
+                {
+                    b.HasOne("ArtisanHubs.Data.Entities.Account", "Account")
+                        .WithMany("FavoriteProducts")
+                        .HasForeignKey("AccountId")
+                        .IsRequired()
+                        .HasConstraintName("favoriteproduct_account_id_fkey");
+
+                    b.HasOne("ArtisanHubs.Data.Entities.Product", "Product")
+                        .WithMany("FavoriteProducts")
+                        .HasForeignKey("ProductId")
+                        .IsRequired()
+                        .HasConstraintName("favoriteproduct_product_id_fkey");
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("ArtisanHubs.Data.Entities.Feedback", b =>
                 {
                     b.HasOne("ArtisanHubs.Data.Entities.Account", "Account")
@@ -1282,6 +1319,8 @@ namespace ArtisanHubs.Data.Migrations
                 {
                     b.Navigation("Artistprofile");
 
+                    b.Navigation("FavoriteProducts");
+
                     b.Navigation("Feedbacks");
 
                     b.Navigation("Orders");
@@ -1358,6 +1397,8 @@ namespace ArtisanHubs.Data.Migrations
             modelBuilder.Entity("ArtisanHubs.Data.Entities.Product", b =>
                 {
                     b.Navigation("Commissions");
+
+                    b.Navigation("FavoriteProducts");
 
                     b.Navigation("Feedbacks");
 

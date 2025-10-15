@@ -17,11 +17,14 @@ namespace ArtisanHubs.API.Controllers
             _categoryService = categoryService;
         }
 
-        [HttpGet] // <-- Endpoint này công khai cho mọi người
-        public async Task<IActionResult> GetAllCategories()
+        [HttpGet]
+        public async Task<IActionResult> GetAllCategories(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 10,
+        [FromQuery] string? searchTerm = null)
         {
-            var result = await _categoryService.GetAllCategoriesAsync();
-            return Ok(result); // Trả về Ok() cho gọn vì SuccessResponse mặc định là status 200
+            var result = await _categoryService.GetAllCategoryAsync(page, size, searchTerm);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("{id}")] // <-- Endpoint này cũng công khai
@@ -46,7 +49,7 @@ namespace ArtisanHubs.API.Controllers
         }
 
         [HttpPost]
-        //[Authorize(Roles = "Admin")] // <-- Chỉ Admin được tạo
+        [Authorize(Roles = "Admin")] // <-- Chỉ Admin được tạo
         public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequest request)
         {
             var result = await _categoryService.CreateCategoryAsync(request);
@@ -54,7 +57,7 @@ namespace ArtisanHubs.API.Controllers
         }
 
         [HttpPut("{id}")]
-        //[Authorize(Roles = "Admin")] // <-- Chỉ Admin được sửa
+        [Authorize(Roles = "Admin")] // <-- Chỉ Admin được sửa
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryRequest request)
         {
             var result = await _categoryService.UpdateCategoryAsync(id, request);
@@ -62,7 +65,7 @@ namespace ArtisanHubs.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        //[Authorize(Roles = "Admin")] // <-- Chỉ Admin được xóa
+        [Authorize(Roles = "Admin")] // <-- Chỉ Admin được xóa
         public async Task<IActionResult> DeleteCategory(int id)
         {
             var result = await _categoryService.DeleteCategoryAsync(id);

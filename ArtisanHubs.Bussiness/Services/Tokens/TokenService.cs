@@ -67,12 +67,14 @@ namespace ArtisanHubs.Bussiness.Services.Tokens
         private readonly SymmetricSecurityKey _jwtKey;
         private readonly string _issuer;
         private readonly string _audience;
+        private readonly IConfiguration _configuration;
 
         public TokenService(IConfiguration configuration)
         {
             _jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
             _issuer = configuration["Jwt:Issuer"];
             _audience = configuration["Jwt:Audience"];
+            _configuration = configuration;
         }
 
         public string CreateToken(Account account)
@@ -102,6 +104,30 @@ namespace ArtisanHubs.Bussiness.Services.Tokens
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
             return tokenHandler.WriteToken(token);
+        }
+
+        public string GenerateJwtToken(Account user)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.AccountId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
+                // Bạn có thể thêm các claim khác như username, avatar...
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddDays(7), // Token hết hạn sau 7 ngày
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

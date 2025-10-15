@@ -16,7 +16,8 @@ namespace ArtisanHubs.DTOs.DTO.Reponse.Products
         public decimal? DiscountPrice { get; set; }
         public string? Images { get; set; }
         public string? CategoryName { get; set; }
-        public string? ArtistName { get; set; }  // thêm tên Artist để show ngoài FE
-        public double? AverageRating { get; set; } // nếu muốn show rating
+        public string? ArtistName { get; set; }
+        public double? AverageRating { get; set; }
+        public int FavoriteCount { get; set; }
     }
 }

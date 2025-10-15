@@ -416,4 +416,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-appsettings.json
+appsettings.Development.json
+/ArtisanHubs.API/appsettings.Development.json

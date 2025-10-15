@@ -36,9 +36,20 @@ namespace ArtisanHubs.API.Controllers
             return accountId;
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllCategories(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 10,
+        [FromQuery] string? searchTerm = null)
+        {
+            var result = await _productService.GetAllProductAsync(page, size, searchTerm);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [Authorize(Roles = "Artist")]
         [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
+        public async Task<IActionResult> CreateProduct([FromForm] CreateProductRequest request)
         {
             // Bước 1: Lấy AccountId từ token
             var accountId = GetCurrentAccountId();
@@ -67,7 +78,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Customer")]
+        [Authorize]
         [HttpGet("customer/{productId}")]
         public async Task<IActionResult> GetProductByIdForCustomer(int productId)
         {
@@ -75,7 +86,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Artist,Customer")]
+        [Authorize]
         [HttpGet("artist/{artistId}/products")]
         public async Task<IActionResult> GetProductsByArtist(int artistId)
         {
@@ -122,7 +133,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Customer")]
+        [Authorize]
         [HttpGet("category/{categoryId}")]
         public async Task<IActionResult> GetProductsByCategoryIdForCustomer(int categoryId)
         {
