@@ -1,15 +1,17 @@
-﻿using ArtisanHubs.API.DTOs.Common;
-using ArtisanHubs.Bussiness.Services.Products.Interfaces;
-using ArtisanHubs.Data.Entities;
-using ArtisanHubs.Data.Repositories.Products.Interfaces;
-using ArtisanHubs.DTOs.DTO.Reponse.Products;
-using ArtisanHubs.DTOs.DTO.Request.Products;
-using AutoMapper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ArtisanHubs.API.DTOs.Common;
+using ArtisanHubs.Bussiness.Services.Products.Interfaces;
+using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Paginate;
+using ArtisanHubs.Data.Repositories.Products.Interfaces;
+using ArtisanHubs.DTOs.DTO.Reponse.Products;
+using ArtisanHubs.DTOs.DTO.Request.Products;
+using AutoMapper;
+using Microsoft.AspNetCore.Http;
 
 namespace ArtisanHubs.Bussiness.Services.Products.Implements
 {
@@ -17,11 +19,13 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
     {
         private readonly IProductRepository _productRepo;
         private readonly IMapper _mapper;
+        private readonly PhotoService _photoService;
 
-        public ProductService(IProductRepository productRepository, IMapper mapper)
+        public ProductService(IProductRepository productRepository, IMapper mapper, PhotoService photoService)
         {
             _productRepo = productRepository;
             _mapper = mapper;
+            _photoService = photoService;
         }
 
         public async Task<ApiResponse<ProductResponse?>> UpdateProductAsync(int productId, int artistId, UpdateProductRequest request)
@@ -95,17 +99,27 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
         {
             try
             {
-                // --- THÊM LOGIC KIỂM TRA TÊN TRÙNG LẶP ---
+                // Check for duplicate product name
                 var productExists = await _productRepo.ProductExistsByNameAsync(artistId, request.Name);
                 if (productExists)
                 {
-                    // Dùng mã lỗi 409 Conflict vì tài nguyên (tên sản phẩm) đã tồn tại
-                    return ApiResponse<ProductResponse>.FailResponse($"A product with the name '{request.Name}' already exists in your shop.", 409);
+                    return ApiResponse<ProductResponse>.FailResponse(
+                        $"A product with the name '{request.Name}' already exists in your shop.", 409);
                 }
 
                 var productEntity = _mapper.Map<Product>(request);
                 productEntity.ArtistId = artistId;
                 productEntity.CreatedAt = DateTime.UtcNow;
+
+                // Handle image upload
+                if (request.Images != null)
+                {
+                    var imageUrl = await _photoService.UploadImageAsync(request.Images);
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        productEntity.Images = imageUrl;
+                    }
+                }
 
                 await _productRepo.CreateAsync(productEntity);
                 var response = _mapper.Map<ProductResponse>(productEntity);
@@ -154,6 +168,24 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             catch (Exception ex)
             {
                 return ApiResponse<IEnumerable<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponse<IPaginate<Product>>> GetAllProductAsync(int page, int size, string? searchTerm = null)
+        {
+            try
+            {
+                // Lấy danh sách category có phân trang
+                var result = await _productRepo.GetPagedAsync(null, page, size, searchTerm);
+
+                return ApiResponse<IPaginate<Product>>.SuccessResponse(
+                    result,
+                    "Get paginated categories successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<IPaginate<Product>>.FailResponse($"Error: {ex.Message}");
             }
         }
     }

@@ -17,11 +17,14 @@ namespace ArtisanHubs.API.Controllers
             _categoryService = categoryService;
         }
 
-        [HttpGet] // <-- Endpoint này công khai cho mọi người
-        public async Task<IActionResult> GetAllCategories()
+        [HttpGet]
+        public async Task<IActionResult> GetAllCategories(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 10,
+        [FromQuery] string? searchTerm = null)
         {
-            var result = await _categoryService.GetAllCategoriesAsync();
-            return Ok(result); // Trả về Ok() cho gọn vì SuccessResponse mặc định là status 200
+            var result = await _categoryService.GetAllCategoryAsync(page, size, searchTerm);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("{id}")] // <-- Endpoint này cũng công khai

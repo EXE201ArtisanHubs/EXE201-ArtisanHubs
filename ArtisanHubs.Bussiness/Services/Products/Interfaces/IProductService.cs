@@ -1,11 +1,13 @@
-﻿using ArtisanHubs.API.DTOs.Common;
-using ArtisanHubs.DTOs.DTO.Reponse.Products;
-using ArtisanHubs.DTOs.DTO.Request.Products;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ArtisanHubs.API.DTOs.Common;
+using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Paginate;
+using ArtisanHubs.DTOs.DTO.Reponse.Products;
+using ArtisanHubs.DTOs.DTO.Request.Products;
 
 namespace ArtisanHubs.Bussiness.Services.Products.Interfaces
 {
@@ -18,5 +20,6 @@ namespace ArtisanHubs.Bussiness.Services.Products.Interfaces
         Task<ApiResponse<bool>> DeleteProductAsync(int productId, int artistId);
         Task<ApiResponse<ProductDetailResponse>> GetProductByIdForCustomerAsync(int productId);
         Task<ApiResponse<IEnumerable<ProductSummaryResponse>>> GetProductsByCategoryIdForCustomerAsync(int categoryId);
+        Task<ApiResponse<IPaginate<Product>>> GetAllProductAsync(int page, int size, string? searchTerm = null);
     }
 }

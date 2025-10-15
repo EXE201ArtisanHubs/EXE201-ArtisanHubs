@@ -1,15 +1,16 @@
-﻿using ArtisanHubs.API.DTOs.Common;
-using ArtisanHubs.Bussiness.Services.Categories.Interfaces;
-using ArtisanHubs.Data.Entities;
-using ArtisanHubs.Data.Repositories.Categories.Interfaces;
-using ArtisanHubs.DTOs.DTO.Reponse.Categories;
-using ArtisanHubs.DTOs.DTO.Request.Categories;
-using AutoMapper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ArtisanHubs.API.DTOs.Common;
+using ArtisanHubs.Bussiness.Services.Categories.Interfaces;
+using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Paginate;
+using ArtisanHubs.Data.Repositories.Categories.Interfaces;
+using ArtisanHubs.DTOs.DTO.Reponse.Categories;
+using ArtisanHubs.DTOs.DTO.Request.Categories;
+using AutoMapper;
 
 namespace ArtisanHubs.Bussiness.Services.Categories.Implements
 {
@@ -24,18 +25,21 @@ namespace ArtisanHubs.Bussiness.Services.Categories.Implements
             _mapper = mapper;
         }
 
-        public async Task<ApiResponse<IEnumerable<CategoryResponse>>> GetAllCategoriesAsync()
+        public async Task<ApiResponse<IPaginate<Category>>> GetAllCategoryAsync(int page, int size, string? searchTerm = null)
         {
             try
             {
-                var categories = await _categoryRepo.GetAllAsync();
-                var response = _mapper.Map<IEnumerable<CategoryResponse>>(categories);
-                return ApiResponse<IEnumerable<CategoryResponse>>.SuccessResponse(response);
+                // Lấy danh sách category có phân trang
+                var result = await _categoryRepo.GetPagedAsync(null, page, size, searchTerm);
+
+                return ApiResponse<IPaginate<Category>>.SuccessResponse(
+                    result,
+                    "Get paginated categories successfully"
+                );
             }
             catch (Exception ex)
             {
-                // Ghi log lỗi ở đây (nếu có)
-                return ApiResponse<IEnumerable<CategoryResponse>>.FailResponse($"An unexpected error occurred: {ex.Message}", 500);
+                return ApiResponse<IPaginate<Category>>.FailResponse($"Error: {ex.Message}");
             }
         }
 

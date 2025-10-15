@@ -1,43 +1,50 @@
-using System.Text;
 using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 using ArtisanHubs.Bussiness.Mapping;
 using ArtisanHubs.Bussiness.Services.Accounts.Implements;
 using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
 using ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements;
 using ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces;
+using ArtisanHubs.Bussiness.Services.Carts.Implements;
+using ArtisanHubs.Bussiness.Services.Carts.Interfaces;
 using ArtisanHubs.Bussiness.Services.Categories.Implements;
 using ArtisanHubs.Bussiness.Services.Categories.Interfaces;
+using ArtisanHubs.Bussiness.Services.Forums.Implements;
+using ArtisanHubs.Bussiness.Services.Forums.Interfaces;
+using ArtisanHubs.Bussiness.Services.Payment;
 using ArtisanHubs.Bussiness.Services.Products.Implements;
 using ArtisanHubs.Bussiness.Services.Products.Interfaces;
+using ArtisanHubs.Bussiness.Services.RefreshTokens;
+using ArtisanHubs.Bussiness.Services.Shared;
 using ArtisanHubs.Bussiness.Services.Tokens;
 using ArtisanHubs.Bussiness.Services.WorkshopPackages.Implements;
 using ArtisanHubs.Bussiness.Services.WorkshopPackages.Interfaces;
+using ArtisanHubs.Bussiness.Settings;
 using ArtisanHubs.Data.Entities;
 using ArtisanHubs.Data.Repositories.Accounts.Implements;
 using ArtisanHubs.Data.Repositories.Accounts.Interfaces;
 using ArtisanHubs.Data.Repositories.ArtistProfiles.Implements;
 using ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces;
+using ArtisanHubs.Data.Repositories.Carts.Implements;
+using ArtisanHubs.Data.Repositories.Carts.Interfaces;
 using ArtisanHubs.Data.Repositories.Categories.Implements;
 using ArtisanHubs.Data.Repositories.Categories.Interfaces;
+using ArtisanHubs.Data.Repositories.Forums.Implements;
+using ArtisanHubs.Data.Repositories.Forums.Interfaces;
+using ArtisanHubs.Data.Repositories.OrderDetails.Implements;
+using ArtisanHubs.Data.Repositories.OrderDetails.Interfaces;
+using ArtisanHubs.Data.Repositories.Orders.Implements;
+using ArtisanHubs.Data.Repositories.Orders.Interfaces;
 using ArtisanHubs.Data.Repositories.Products.Implements;
 using ArtisanHubs.Data.Repositories.Products.Interfaces;
 using ArtisanHubs.Data.Repositories.WorkshopPackages.Implements;
 using ArtisanHubs.Data.Repositories.WorkshopPackages.Interfaces;
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using ArtisanHubs.Data.Repositories.Carts.Interfaces;
-using ArtisanHubs.Data.Repositories.Carts.Implements;
-using ArtisanHubs.Bussiness.Services.Carts.Interfaces;
-using ArtisanHubs.Bussiness.Services.Carts.Implements;
-using ArtisanHubs.Data.Repositories.Forums.Interfaces;
-using ArtisanHubs.Data.Repositories.Forums.Implements;
-using ArtisanHubs.Bussiness.Services.Forums.Interfaces;
-using ArtisanHubs.Bussiness.Services.Forums.Implements;
-using ArtisanHubs.Bussiness.Services.Shared;
-using ArtisanHubs.Bussiness.Settings;
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -82,11 +89,26 @@ builder.Services.AddScoped<IFavoriteProductService, FavoriteProductService>();
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.AddTransient<IEmailService, SendGridEmailService>();
 
-builder.Services.AddScoped<IPasswordHasher<Account>, PasswordHasher<Account>>();
+builder.Services.AddScoped<IPasswordHasher<ArtisanHubs.Data.Entities.Account>, PasswordHasher<ArtisanHubs.Data.Entities.Account>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddScoped<PhotoService>();
+builder.Services.AddSingleton<PayOSService>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<OrderPaymentService>();
+builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
+
+var cloudName = configuration["CloudinarySettings:CloudName"];
+var apiKey = configuration["CloudinarySettings:ApiKey"];
+var apiSecret = configuration["CloudinarySettings:ApiSecret"];
+
+var account = new CloudinaryDotNet.Account(cloudName, apiKey, apiSecret);
+var cloudinary = new Cloudinary(account);
+
+builder.Services.AddSingleton(cloudinary);
 
 builder.Services.AddCors(options =>
 {

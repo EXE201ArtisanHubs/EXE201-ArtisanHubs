@@ -1,10 +1,12 @@
 ﻿using ArtisanHubs.Data.Basic;
 using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.Data.Repositories.Products.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -52,6 +54,34 @@ namespace ArtisanHubs.Data.Repositories.Products.Implements
                                  .Include(p => p.Category)
                                  .Where(p => p.CategoryId == categoryId)
                                  .ToListAsync();
+        }
+
+        public async Task<IPaginate<Product>> GetPagedAsync(
+        Expression<Func<Product, bool>>? predicate,
+        int page,
+        int size,
+        string? searchTerm = null
+)
+        {
+            IQueryable<Product> query = _context.Set<Product>();
+
+            // Nếu có điều kiện predicate thì apply
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                string keyword = searchTerm.ToLower();
+                query = query.Where(a =>
+                    a.Name.ToLower().Contains(keyword)
+                );
+            }
+
+            return await query.AsNoTracking()
+                              .OrderBy(a => a.CategoryId)
+                              .ToPaginateAsync(page, size);
         }
     }
 }

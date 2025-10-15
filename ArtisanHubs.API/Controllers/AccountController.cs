@@ -14,9 +14,11 @@ namespace ArtisanHubs.API.Controllers
     public class AccountController : ControllerBase
     {
         private readonly IAccountService _accountService;
-        public AccountController(IAccountService accountService)
+        private readonly PhotoService _photoService;
+        public AccountController(IAccountService accountService, PhotoService photoService)
         {
             _accountService = accountService;
+            _photoService = photoService;
         }
 
         private int GetCurrentAccountId()
@@ -40,11 +42,15 @@ namespace ArtisanHubs.API.Controllers
         /// Lấy danh sách tất cả tài khoản
         /// </summary>
         [Authorize(Roles = "Admin")]
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet()]
+        public async Task<IActionResult> GetAllPaged(
+    [FromQuery] int page = 1,
+    [FromQuery] int size = 10,
+    [FromQuery] string? searchTerm = null
+)
         {
-            var result = await _accountService.GetAllAccountAsync();
-            return StatusCode(result.StatusCode, result); ;
+            var result = await _accountService.GetAllAccountAsync(page, size, searchTerm);
+            return Ok(result);
         }
 
         /// <summary>
@@ -75,9 +81,17 @@ namespace ArtisanHubs.API.Controllers
         /// Tạo mới tài khoản
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] AccountRequest request)
+        public async Task<IActionResult> Create([FromForm] AccountRequest request)
         {
-            var result = await _accountService.CreateAsync(request);
+            // Upload ảnh nếu có
+            string? avatarUrl = null;
+            if (request.AvatarFile != null)
+            {
+                avatarUrl = await _photoService.UploadImageAsync(request.AvatarFile);
+                request.AvatarFile = null;
+            }
+
+            var result = await _accountService.CreateAsync(request, avatarUrl);
             return StatusCode(result.StatusCode, result);
         }
 
@@ -100,6 +114,17 @@ namespace ArtisanHubs.API.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _accountService.DeleteAsync(id);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        /// <summary>
+        /// Lấy thông tin tài khoản của chính mình
+        /// </summary>
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMyProfile()
+        {
+            var accountId = GetCurrentAccountId();
+            var result = await _accountService.GetByIdAsync(accountId);
             return StatusCode(result.StatusCode, result);
         }
 

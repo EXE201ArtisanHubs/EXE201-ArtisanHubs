@@ -9,6 +9,7 @@ using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
 using ArtisanHubs.Bussiness.Services.Shared;
 using ArtisanHubs.Bussiness.Services.Tokens;
 using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.Data.Repositories.Accounts.Implements;
 using ArtisanHubs.Data.Repositories.Accounts.Interfaces;
 using ArtisanHubs.DTOs.DTO.Reponse.Accounts;
@@ -76,21 +77,21 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             }
         }
 
-        // Lấy tất cả Account
-        public async Task<ApiResponse<IEnumerable<AccountResponse>>> GetAllAccountAsync()
-        {
-            try
-            {
-                var accounts = await _repo.GetAllAsync();
-                var response = _mapper.Map<IEnumerable<AccountResponse>>(accounts);
+        //// Lấy tất cả Account
+        //public async Task<ApiResponse<IEnumerable<AccountResponse>>> GetAllAccountAsync()
+        //{
+        //    try
+        //    {
+        //        var accounts = await _repo.GetAllAsync();
+        //        var response = _mapper.Map<IEnumerable<AccountResponse>>(accounts);
 
-                return ApiResponse<IEnumerable<AccountResponse>>.SuccessResponse(response, "Get all accounts successfully");
-            }
-            catch (Exception ex)
-            {
-                return ApiResponse<IEnumerable<AccountResponse>>.FailResponse($"Error: {ex.Message}", 500);
-            }
-        }
+        //        return ApiResponse<IEnumerable<AccountResponse>>.SuccessResponse(response, "Get all accounts successfully");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return ApiResponse<IEnumerable<AccountResponse>>.FailResponse($"Error: {ex.Message}", 500);
+        //    }
+        //}
 
         // Lấy Account theo Id
         public async Task<ApiResponse<AccountResponse?>> GetByIdAsync(int id)
@@ -111,7 +112,7 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         }
 
         // Tạo mới Account
-        public async Task<ApiResponse<AccountResponse>> CreateAsync(AccountRequest request)
+        public async Task<ApiResponse<AccountResponse>> CreateAsync(AccountRequest request, string? avatarUrl = null)
         {
             try
             {
@@ -130,6 +131,13 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
 
                 // Hash password trước khi lưu
                 entity.PasswordHash = _passwordHasher.HashPassword(entity, request.Password);
+
+                // Set default avatar if none provided
+                if (string.IsNullOrEmpty(avatarUrl))
+                {
+                    avatarUrl = "https://res-console.cloudinary.com/artisanhubs2025/thumbnails/v1/image/upload/v1760527061/YmM0Mzk4NzE0MTc2MjE4MzZhMGVlZWE3NjhkNjA5NDRfemRmeW9w/drilldown";
+                }
+                entity.Avatar = avatarUrl;
 
                 await _repo.CreateAsync(entity);
 
@@ -295,6 +303,26 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             catch (Exception ex)
             {
                 return ApiResponse<LoginResponse>.FailResponse($"An unexpected error occurred: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponse<IPaginate<Account>>> GetAllAccountAsync(int page, int size, string? searchTerm = null)
+        {
+            try
+            {
+                // Lấy danh sách có phân trang
+                var result = await _repo.GetPagedAsync(null, page, size, searchTerm);
+
+                // ✅ Trả về gói trong ApiResponse mà KHÔNG ép kiểu
+                return ApiResponse<IPaginate<Account>>.SuccessResponse(
+                    result,
+                    "Get paginated accounts successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                // ✅ Bắt lỗi và trả về fail response
+                return ApiResponse<IPaginate<Account>>.FailResponse($"Error: {ex.Message}");
             }
         }
     }
