@@ -117,16 +117,16 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        /// <summary>
-        /// Lấy thông tin tài khoản của chính mình
-        /// </summary>
-        [HttpGet("me")]
-        public async Task<IActionResult> GetMyProfile()
-        {
-            var accountId = GetCurrentAccountId();
-            var result = await _accountService.GetByIdAsync(accountId);
-            return StatusCode(result.StatusCode, result);
-        }
+        ///// <summary>
+        ///// Lấy thông tin tài khoản của chính mình
+        ///// </summary>
+        //[HttpGet("me")]
+        //public async Task<IActionResult> GetMyProfile()
+        //{
+        //    var accountId = GetCurrentAccountId();
+        //    var result = await _accountService.GetByIdAsync(accountId);
+        //    return StatusCode(result.StatusCode, result);
+        //}
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
