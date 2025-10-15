@@ -26,6 +26,8 @@ public partial class Artistprofile
     public decimal? AvgRating { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+    public string? Specialty { get; set; }
+    public int? ExperienceYears { get; set; }
 
     public virtual Account Account { get; set; } = null!;
 
@@ -38,4 +40,5 @@ public partial class Artistprofile
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 
     public virtual ICollection<Withdrawrequest> Withdrawrequests { get; set; } = new List<Withdrawrequest>();
+    public virtual ICollection<Achievement> Achievements { get; set; } = new List<Achievement>();
 }

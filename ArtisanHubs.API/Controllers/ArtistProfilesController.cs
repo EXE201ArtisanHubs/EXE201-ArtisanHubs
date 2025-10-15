@@ -47,7 +47,7 @@ namespace ArtisanHubs.API.Controllers
 
         // POST: api/artist-profiles/me
         // Tạo profile cho chính nghệ nhân đang đăng nhập
-        [Authorize(Roles = "Artist")]
+       // [Authorize]
         [HttpPost()]
         public async Task<IActionResult> CreateMyProfile([FromBody] ArtistProfileRequest request)
         {
@@ -81,7 +81,7 @@ namespace ArtisanHubs.API.Controllers
 
 
         // Lấy danh sách tất cả profile (có thể cho Admin hoặc công khai)
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin, Customer")]
         [HttpGet]
         public async Task<IActionResult> GetAllProfiles()
         {

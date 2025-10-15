@@ -60,17 +60,18 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             return ApiResponse<bool>.SuccessResponse(true, "Product deleted successfully.");
         }
 
-        public async Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetMyProductsAsync(int artistId)
+        public async Task<ApiResponse<IEnumerable<ProductSummaryResponse>>> GetMyProductsAsync(int artistId)
         {
             try
             {
                 var products = await _productRepo.GetProductsByArtistIdAsync(artistId);
-                var response = _mapper.Map<IEnumerable<ProductForCustomerResponse>>(products);
-                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.SuccessResponse(response, "Get products successfully.");
+                // THAY ĐỔI Ở ĐÂY: Map sang DTO mới
+                var response = _mapper.Map<IEnumerable<ProductSummaryResponse>>(products);
+                return ApiResponse<IEnumerable<ProductSummaryResponse>>.SuccessResponse(response, "Get products successfully.");
             }
             catch (Exception ex)
             {
-                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
+                return ApiResponse<IEnumerable<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
 
@@ -131,41 +132,42 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             }
         }
 
-        public async Task<ApiResponse<ProductForCustomerResponse>> GetProductByIdForCustomerAsync(int productId)
+        public async Task<ApiResponse<ProductDetailResponse>> GetProductByIdForCustomerAsync(int productId)
         {
             try
             {
                 var product = await _productRepo.GetProductWithDetailsAsync(productId);
                 if (product == null)
                 {
-                    return ApiResponse<ProductForCustomerResponse>.FailResponse("Product not found.", 404);
+                    return ApiResponse<ProductDetailResponse>.FailResponse("Product not found.", 404);
                 }
 
-                var response = _mapper.Map<ProductForCustomerResponse>(product);
-                return ApiResponse<ProductForCustomerResponse>.SuccessResponse(response, "Get product successfully.");
+                // THAY ĐỔI Ở ĐÂY: Map sang DTO mới
+                var response = _mapper.Map<ProductDetailResponse>(product);
+                return ApiResponse<ProductDetailResponse>.SuccessResponse(response, "Get product successfully.");
             }
             catch (Exception ex)
             {
-                return ApiResponse<ProductForCustomerResponse>.FailResponse($"An error occurred: {ex.Message}", 500);
+                return ApiResponse<ProductDetailResponse>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
 
-        public async Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetProductsByCategoryIdForCustomerAsync(int categoryId)
+        public async Task<ApiResponse<IEnumerable<ProductSummaryResponse>>> GetProductsByCategoryIdForCustomerAsync(int categoryId)
         {
             try
             {
                 var products = await _productRepo.GetProductsByCategoryIdAsync(categoryId);
                 if (products == null || !products.Any())
                 {
-                    return ApiResponse<IEnumerable<ProductForCustomerResponse>>.FailResponse("No products found in this category.", 404);
+                    return ApiResponse<IEnumerable<ProductSummaryResponse>>.FailResponse("No products found in this category.", 404);
                 }
-                var response = _mapper.Map<IEnumerable<ProductForCustomerResponse>>(products);
-                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.SuccessResponse(response, "Get products successfully.");
-
+                // THAY ĐỔI Ở ĐÂY: Map sang DTO mới
+                var response = _mapper.Map<IEnumerable<ProductSummaryResponse>>(products);
+                return ApiResponse<IEnumerable<ProductSummaryResponse>>.SuccessResponse(response, "Get products successfully.");
             }
-            catch (Exception ex) {
-
-                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
+            catch (Exception ex)
+            {
+                return ApiResponse<IEnumerable<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
 

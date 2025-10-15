@@ -21,12 +21,15 @@ namespace ArtisanHubs.Data.Repositories.ArtistProfiles.Implements
 
         public async Task<IEnumerable<Artistprofile>> GetAllAsync()
         {
-            return await _context.Artistprofiles.ToListAsync();
+            return await _context.Artistprofiles
+             .Include(p => p.Achievements) 
+             .ToListAsync();
         }
 
         public async Task<Artistprofile?> GetProfileByAccountIdAsync(int accountId)
         {
             return await _context.Artistprofiles
+                                 .Include (p=>p.Achievements)
                                  .FirstOrDefaultAsync(p => p.AccountId == accountId);
         }
 
