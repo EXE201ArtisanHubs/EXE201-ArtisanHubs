@@ -16,10 +16,6 @@ namespace ArtisanHubs.DTOs.DTOs.Request.Accounts
         [Required]
         public string Password { get; set; } = string.Empty;
 
-        // Sửa lại Role để không có giá trị mặc định
-        [Required]
-        public string Role { get; set; } = string.Empty;
-
         [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
 

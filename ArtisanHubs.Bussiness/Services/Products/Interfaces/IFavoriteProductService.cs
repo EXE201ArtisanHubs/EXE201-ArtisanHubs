@@ -12,7 +12,7 @@ namespace ArtisanHubs.Bussiness.Services.Products.Interfaces
     {
         Task<ApiResponse<bool>> AddFavoriteAsync(int accountId, int productId);
         Task<ApiResponse<bool>> RemoveFavoriteAsync(int accountId, int productId);
-        Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetMyFavoritesAsync(int accountId);
-        Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetTrendingProductsAsync(int topN = 10);
+        Task<ApiResponse<IEnumerable<ProductDetailResponse>>> GetMyFavoritesAsync(int accountId);
+        Task<ApiResponse<IEnumerable<ProductDetailResponse>>> GetTrendingProductsAsync(int topN = 10);
     }
 }

@@ -71,7 +71,7 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
         }
 
         // 💡 THIS METHOD HAS BEEN CORRECTED
-        public async Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetMyFavoritesAsync(int accountId)
+        public async Task<ApiResponse<IEnumerable<ProductDetailResponse>>> GetMyFavoritesAsync(int accountId)
         {
             try
             {
@@ -86,18 +86,18 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
                     .Where(p => p.FavoriteProducts.Any(fp => fp.AccountId == accountId))
                     .ToListAsync();
 
-                var response = _mapper.Map<IEnumerable<ProductForCustomerResponse>>(favoriteProducts);
-                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.SuccessResponse(response, "Get favorite products successfully.");
+                var response = _mapper.Map<IEnumerable<ProductDetailResponse>>(favoriteProducts);
+                return ApiResponse<IEnumerable<ProductDetailResponse>>.SuccessResponse(response, "Get favorite products successfully.");
             }
             catch (Exception ex)
             {
                 // Ghi log lỗi ở đây để debug dễ hơn
                 // Ví dụ: _logger.LogError(ex, "Error in GetMyFavoritesAsync");
-                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
+                return ApiResponse<IEnumerable<ProductDetailResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
 
-        public async Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetTrendingProductsAsync(int topN = 10)
+        public async Task<ApiResponse<IEnumerable<ProductDetailResponse>>> GetTrendingProductsAsync(int topN = 10)
         {
             try
             {
@@ -111,12 +111,12 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
                     .Take(topN)
                     .ToListAsync();
 
-                var response = _mapper.Map<IEnumerable<ProductForCustomerResponse>>(trendingProducts);
-                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.SuccessResponse(response, "Get trending products successfully.");
+                var response = _mapper.Map<IEnumerable<ProductDetailResponse>>(trendingProducts);
+                return ApiResponse<IEnumerable<ProductDetailResponse>>.SuccessResponse(response, "Get trending products successfully.");
             }
             catch (Exception ex)
             {
-                return ApiResponse<IEnumerable<ProductForCustomerResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
+                return ApiResponse<IEnumerable<ProductDetailResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
     }
