@@ -1,10 +1,12 @@
 ﻿using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces;
 using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Repositories.Accounts.Interfaces;
 using ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces;
 using ArtisanHubs.DTOs.DTO.Reponse.ArtistProfile;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,11 +19,15 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
     {
         private readonly IArtistProfileRepository _repo;
         private readonly IMapper _mapper;
+        private readonly IAccountRepository _accountRepo;
+        private readonly ArtisanHubsDbContext _context;
 
-        public ArtistProfileService(IArtistProfileRepository repo, IMapper mapper)
+        public ArtistProfileService(IArtistProfileRepository repo, IMapper mapper,IAccountRepository accountRepository, ArtisanHubsDbContext context)
         {
             _repo = repo;
             _mapper = mapper;
+            _accountRepo = accountRepository;
+            _context = context;
         }
 
         // Lấy profile của nghệ nhân đang đăng nhập
@@ -45,27 +51,44 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
         // Tạo mới profile cho nghệ nhân
         public async Task<ApiResponse<ArtistProfileResponse>> CreateMyProfileAsync(int accountId, ArtistProfileRequest request)
         {
+            await using var transaction = await _context.Database.BeginTransactionAsync();           
             try
             {
-                // Kiểm tra xem profile đã tồn tại chưa
+                // Kiểm tra các điều kiện như cũ
                 var existingProfile = await _repo.GetProfileByAccountIdAsync(accountId);
                 if (existingProfile != null)
                 {
-                    // Dùng mã lỗi 409 Conflict vì tài nguyên đã tồn tại
                     return ApiResponse<ArtistProfileResponse>.FailResponse("Artist profile already exists for this account.", 409);
                 }
 
+                var accountToUpdate = await _accountRepo.GetByIdAsync(accountId);
+                if (accountToUpdate == null || accountToUpdate.Role != "Customer")
+                {
+                    return ApiResponse<ArtistProfileResponse>.FailResponse("Only accounts with 'Customer' role can create an artist profile.", 403);
+                }
+
+                // 1. Dùng Repository để tạo profile.
+                // Repository này sẽ gọi SaveChanges() lần 1.
                 var entity = _mapper.Map<Artistprofile>(request);
                 entity.AccountId = accountId;
-                entity.CreatedAt = DateTime.UtcNow; // Gán thời gian tạo
-
+                entity.CreatedAt = DateTime.UtcNow;
                 await _repo.CreateAsync(entity);
 
+                // 2. Dùng Repository để cập nhật role.
+                // Repository này sẽ gọi SaveChanges() lần 2.
+                accountToUpdate.Role = "Artist";
+                await _accountRepo.UpdateAsync(accountToUpdate);
+
+                // 3. Nếu cả 2 bước trên không có lỗi, commit transaction
+                await transaction.CommitAsync();
+
                 var response = _mapper.Map<ArtistProfileResponse>(entity);
-                return ApiResponse<ArtistProfileResponse>.SuccessResponse(response, "Create profile successfully", 201);
+                return ApiResponse<ArtistProfileResponse>.SuccessResponse(response, "Create profile and upgrade role to Artist successfully", 201);
             }
             catch (Exception ex)
             {
+                // 4. Nếu có bất kỳ lỗi nào, rollback tất cả thay đổi
+                await transaction.RollbackAsync();
                 return ApiResponse<ArtistProfileResponse>.FailResponse($"Error: {ex.Message}", 500);
             }
         }
@@ -75,13 +98,16 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
         {
             try
             {
-                var existing = await _repo.GetProfileByAccountIdAsync(accountId);
+                // Thay vì GetByAccountIdAsync, ta dùng GetQueryable để Include
+                var existing = await _repo.GetQueryable()
+                                          .Include(p => p.Achievements)
+                                          .FirstOrDefaultAsync(p => p.AccountId == accountId);
+
                 if (existing == null)
                     return ApiResponse<ArtistProfileResponse?>.FailResponse("Artist profile not found to update", 404);
 
+                // Mapper sẽ cập nhật các trường cơ bản và xử lý danh sách Achievements
                 _mapper.Map(request, existing);
-                // Bạn có thể thêm các trường cập nhật khác ở đây nếu cần, ví dụ:
-                // existing.UpdatedAt = DateTime.UtcNow;
 
                 await _repo.UpdateAsync(existing);
 

@@ -29,8 +29,26 @@ namespace ArtisanHubs.Bussiness.Mapping
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); ;
 
+
+
+
+            CreateMap<Achievement, AchievementResponse>();
             CreateMap<Artistprofile, ArtistProfileResponse>();
-            CreateMap<ArtistProfileRequest, Artistprofile>();
+            CreateMap<ArtistProfileRequest, Artistprofile>()
+            .ForMember(dest => dest.Achievements, opt => opt.Ignore()) // Bỏ qua mapping tự động cho Achievements
+            .AfterMap((src, dest) => {
+                // Xử lý Achievements thủ công
+                // Xóa các achievement cũ
+                dest.Achievements.Clear();
+                // Thêm các achievement mới từ request
+                foreach (var achievementDesc in src.Achievements)
+                {
+                    dest.Achievements.Add(new Achievement { Description = achievementDesc });
+                }
+            });
+
+
+
 
             CreateMap<Workshoppackage, WorkshopPackageResponse>();
             CreateMap<WorkshopPackageRequest, Workshoppackage>();
@@ -39,32 +57,27 @@ namespace ArtisanHubs.Bussiness.Mapping
             CreateMap<UpdateCategoryRequest, Category>();
             CreateMap<Category, CategoryResponse>();
 
-            CreateMap<CreateProductRequest, Product>();
-            CreateMap<UpdateProductRequest, Product>();
-            CreateMap<Product, ProductResponse>()
-               .ForMember(dest => dest.CategoryName,
-                          opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null));
             //CreateMap<Product, ProductForCustomerResponse>()
             //.ForMember(dest => dest.CategoryName,
             //           opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null))
             //.ForMember(dest => dest.ArtistName,
             //           opt => opt.MapFrom(src => src.Artist != null ? src.Artist.ArtistName : null));
-            CreateMap<Product, ProductForCustomerResponse>()
-    // Map tên danh mục
-    .ForMember(dest => dest.CategoryName,
-        opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null)) // <-- Sửa lại ở đây
+            CreateMap<CreateProductRequest, Product>();
+            CreateMap<Product, ProductSummaryResponse>();
+            CreateMap<UpdateProductRequest, Product>();
+            CreateMap<Product, ProductResponse>()
+               .ForMember(dest => dest.CategoryName,
+                          opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null));
 
-    // Map tên nghệ nhân
-    .ForMember(dest => dest.ArtistName,
-        opt => opt.MapFrom(src => src.Artist != null ? src.Artist.ArtistName : null))     // <-- Và ở đây
-
-    // Tính rating trung bình, kiểm tra để tránh lỗi chia cho 0
-    .ForMember(dest => dest.AverageRating,
-        opt => opt.MapFrom(src => src.Feedbacks.Any() ? src.Feedbacks.Average(f => f.Rating) : (double?)null))
-
-    // Đếm số lượt yêu thích
-    .ForMember(dest => dest.FavoriteCount,
-        opt => opt.MapFrom(src => src.FavoriteProducts.Count));
+            CreateMap<Product, ProductDetailResponse>()
+            .ForMember(dest => dest.CategoryName,
+                opt => opt.MapFrom(src => src.Category != null ? src.Category.Description : null))
+            .ForMember(dest => dest.ArtistName,
+                opt => opt.MapFrom(src => src.Artist != null ? src.Artist.ArtistName : null))
+            .ForMember(dest => dest.AverageRating,
+                opt => opt.MapFrom(src => src.Feedbacks.Any() ? src.Feedbacks.Average(f => f.Rating) : (double?)null))
+            .ForMember(dest => dest.FavoriteCount,
+                opt => opt.MapFrom(src => src.FavoriteProducts.Count));
 
             CreateMap<Cart, CartResponse>()
     .ForMember(dest => dest.CartId, opt => opt.MapFrom(src => src.Id))

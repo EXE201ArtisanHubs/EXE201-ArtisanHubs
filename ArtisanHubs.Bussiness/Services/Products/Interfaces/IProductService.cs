@@ -11,12 +11,12 @@ namespace ArtisanHubs.Bussiness.Services.Products.Interfaces
 {
     public interface IProductService
     {      
-        Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetMyProductsAsync(int artistId);     
+        Task<ApiResponse<IEnumerable<ProductSummaryResponse>>> GetMyProductsAsync(int artistId);     
         Task<ApiResponse<ProductResponse?>> GetMyProductByIdAsync(int productId, int artistId);        
         Task<ApiResponse<ProductResponse>> CreateProductAsync(int artistId, CreateProductRequest request);       
         Task<ApiResponse<ProductResponse?>> UpdateProductAsync(int productId, int artistId, UpdateProductRequest request);
         Task<ApiResponse<bool>> DeleteProductAsync(int productId, int artistId);
-        Task<ApiResponse<ProductForCustomerResponse>> GetProductByIdForCustomerAsync(int productId);
-        Task<ApiResponse<IEnumerable<ProductForCustomerResponse>>> GetProductsByCategoryIdForCustomerAsync(int categoryId);
+        Task<ApiResponse<ProductDetailResponse>> GetProductByIdForCustomerAsync(int productId);
+        Task<ApiResponse<IEnumerable<ProductSummaryResponse>>> GetProductsByCategoryIdForCustomerAsync(int categoryId);
     }
 }

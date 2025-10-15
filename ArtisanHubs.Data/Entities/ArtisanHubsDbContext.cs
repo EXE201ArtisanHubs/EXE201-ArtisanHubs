@@ -660,6 +660,7 @@ public partial class ArtisanHubsDbContext : DbContext
     public virtual DbSet<ForumThread> ForumThreads { get; set; }
     public virtual DbSet<ForumPost> ForumPosts { get; set; }
     public virtual DbSet<FavoriteProduct> FavoriteProducts { get; set; }
+    public virtual DbSet<Achievement> Achievements { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -716,6 +717,15 @@ public partial class ArtisanHubsDbContext : DbContext
                   .WithOne() // Giả sử một Account chỉ có một Cart
                   .HasForeignKey<Cart>(c => c.AccountId)
                   .IsRequired();
+        });
+        modelBuilder.Entity<Achievement>(entity =>
+        {
+            entity.HasKey(e => e.AchievementId);
+            entity.Property(e => e.Description).IsRequired();
+
+            entity.HasOne(d => d.Artist)
+                .WithMany(p => p.Achievements)
+                .HasForeignKey(d => d.ArtistId);
         });
 
         modelBuilder.Entity<CartItem>(entity =>

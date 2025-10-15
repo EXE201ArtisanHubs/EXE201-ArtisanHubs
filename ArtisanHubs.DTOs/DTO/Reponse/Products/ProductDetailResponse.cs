@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ArtisanHubs.DTOs.DTO.Reponse.Products
 {
-   public class ProductForCustomerResponse
+   public class ProductDetailResponse
     {
         public int ProductId { get; set; }
         public string Name { get; set; } = null!;

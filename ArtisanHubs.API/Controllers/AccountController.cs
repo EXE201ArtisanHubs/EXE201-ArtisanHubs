@@ -58,6 +58,19 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpGet("me")]
+        [Authorize] // Yêu cầu phải đăng nhập, không cần chỉ định Role
+        public async Task<IActionResult> GetMyAccount()
+        {
+            // Lấy ID từ token đã xác thực
+            var accountId = GetCurrentAccountId();
+
+            // Gọi service để lấy thông tin
+            var result = await _accountService.GetMyAccountAsync(accountId);
+
+            return StatusCode(result.StatusCode, result);
+        }
+
         /// <summary>
         /// Tạo mới tài khoản
         /// </summary>
@@ -129,5 +142,6 @@ namespace ArtisanHubs.API.Controllers
             var result = await _accountService.LoginWithGoogleAsync(request);
             return StatusCode(result.StatusCode, result);
         }
+
     }
 }

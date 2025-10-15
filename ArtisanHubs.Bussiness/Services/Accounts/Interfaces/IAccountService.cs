@@ -23,5 +23,6 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Interfaces
         Task<ApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);
         Task<ApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
         Task<ApiResponse<LoginResponse>> LoginWithGoogleAsync(GoogleLoginRequest request);
+        Task<ApiResponse<AccountResponse?>> GetMyAccountAsync(int accountId);
     }
 }

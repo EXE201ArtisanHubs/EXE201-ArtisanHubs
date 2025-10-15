@@ -121,14 +121,13 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
                     return ApiResponse<AccountResponse>.FailResponse("Email already in use", 409); // 409 Conflict
                 }
 
-                if (request.Role != "Customer" && request.Role != "Artist" && request.Role != "Admin")
-                {
-                    return ApiResponse<AccountResponse>.FailResponse("Invalid role specified. Must be 'Customer' or 'Artist' or 'Admin'.", 400); // 400 Bad Request
-                }
                 var entity = _mapper.Map<Account>(request);
                 entity.CreatedAt = DateTime.UtcNow;
                 entity.Status = "Active";
-               
+
+                // THÊM DÒNG NÀY ĐỂ GÁN ROLE MẶC ĐỊNH
+                entity.Role = "Customer";
+
                 // Hash password trước khi lưu
                 entity.PasswordHash = _passwordHasher.HashPassword(entity, request.Password);
 
@@ -232,6 +231,29 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             _repo.UpdateAsync(account);
 
             return ApiResponse<object>.SuccessResponse(null, "Password has been reset successfully.");
+        }
+
+        public async Task<ApiResponse<AccountResponse?>> GetMyAccountAsync(int accountId)
+        {
+            try
+            {
+                // Dùng accountId (lấy từ token) để tìm tài khoản
+                var account = await _repo.GetByIdAsync(accountId);
+
+                if (account == null)
+                {
+                    // Trường hợp này rất hiếm khi xảy ra nếu token hợp lệ
+                    return ApiResponse<AccountResponse?>.FailResponse("Account not found.", 404);
+                }
+
+                // Map entity sang DTO để trả về cho client
+                var response = _mapper.Map<AccountResponse>(account);
+                return ApiResponse<AccountResponse?>.SuccessResponse(response, "Get current user info successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<AccountResponse?>.FailResponse($"An error occurred: {ex.Message}", 500);
+            }
         }
 
         public async Task<ApiResponse<LoginResponse>> LoginWithGoogleAsync(GoogleLoginRequest request)
