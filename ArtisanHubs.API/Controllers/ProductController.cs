@@ -133,11 +133,22 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpGet("category/{categoryId}")]
         public async Task<IActionResult> GetProductsByCategoryIdForCustomer(int categoryId)
         {
             var result = await _productService.GetProductsByCategoryIdForCustomerAsync(categoryId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        //[Authorize]
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchProductsByName(
+            [FromQuery] string? name = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 10)
+        {
+            var result = await _productService.SearchProductsByNameForCustomerAsync(name, page, size);
             return StatusCode(result.StatusCode, result);
         }
     }
