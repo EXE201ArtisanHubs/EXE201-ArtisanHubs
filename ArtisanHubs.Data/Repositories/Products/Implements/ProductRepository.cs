@@ -83,5 +83,37 @@ namespace ArtisanHubs.Data.Repositories.Products.Implements
                               .OrderBy(a => a.CategoryId)
                               .ToPaginateAsync(page, size);
         }
+
+        public async Task<IPaginate<Product>> GetFilteredProductsAsync(
+            Expression<Func<Product, bool>>? predicate,
+            Func<IQueryable<Product>, IOrderedQueryable<Product>>? orderBy,
+            int page,
+            int size)
+        {
+            IQueryable<Product> query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Artist)
+                .Include(p => p.FavoriteProducts)
+                .Include(p => p.Feedbacks);
+
+            // Apply filter predicate if provided
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            // Apply ordering if provided, otherwise default to CreatedAt descending
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+            else
+            {
+                query = query.OrderByDescending(p => p.CreatedAt);
+            }
+
+            return await query.AsNoTracking()
+                             .ToPaginateAsync(page, size);
+        }
     }
 }

@@ -21,5 +21,10 @@ namespace ArtisanHubs.Data.Repositories.Products.Interfaces
         int page,
         int size,
         string? searchTerm = null);
+        Task<IPaginate<Product>> GetFilteredProductsAsync(
+        Expression<Func<Product, bool>>? predicate,
+        Func<IQueryable<Product>, IOrderedQueryable<Product>>? orderBy,
+        int page,
+        int size);
     }
 }

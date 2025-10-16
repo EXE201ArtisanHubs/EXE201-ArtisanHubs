@@ -23,5 +23,6 @@ namespace ArtisanHubs.Bussiness.Services.Products.Interfaces
         Task<ApiResponse<IEnumerable<ProductSummaryResponse>>> GetProductsByCategoryIdForCustomerAsync(int categoryId);
         Task<ApiResponse<IPaginate<Product>>> GetAllProductAsync(int page, int size, string? searchTerm = null);
         Task<ApiResponse<IPaginate<ProductSummaryResponse>>> SearchProductsByNameForCustomerAsync(string? name, int page, int size);
+        Task<ApiResponse<IPaginate<ProductSummaryResponse>>> FilterProductsForCustomerAsync(ProductFilterRequest filterRequest);
     }
 }

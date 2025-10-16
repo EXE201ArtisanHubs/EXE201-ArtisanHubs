@@ -151,5 +151,16 @@ namespace ArtisanHubs.API.Controllers
             var result = await _productService.SearchProductsByNameForCustomerAsync(name, page, size);
             return StatusCode(result.StatusCode, result);
         }
+
+        /// <summary>
+        /// Filter products for customers with multiple criteria
+        /// </summary>
+        //[Authorize]
+        [HttpGet("filter")]
+        public async Task<IActionResult> FilterProducts([FromQuery] ProductFilterRequest filterRequest)
+        {
+            var result = await _productService.FilterProductsForCustomerAsync(filterRequest);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }
