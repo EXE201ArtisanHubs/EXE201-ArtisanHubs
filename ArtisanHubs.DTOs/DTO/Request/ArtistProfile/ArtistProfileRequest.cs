@@ -14,6 +14,7 @@ namespace ArtisanHubs.DTOs.DTO.Request.ArtistProfile
         public IFormFile? ProfileImage { get; set; }
         public string? Bio { get; set; }
         public string? Location { get; set; }
+        public string? SocialLinks { get; set; }
         public string? Specialty { get; set; }
         public int? ExperienceYears { get; set; }
         public List<string> Achievements { get; set; } = new List<string>();
