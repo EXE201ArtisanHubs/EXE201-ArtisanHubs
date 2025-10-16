@@ -12,6 +12,6 @@ namespace ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces
     {
         Task<IEnumerable<Artistprofile>> GetAllAsync();
         Task<Artistprofile?> GetProfileByAccountIdAsync(int id);
-        //Task<IEnumerable<Artistprofile>> GetAllArtistsAsync();
+        Task<Artistprofile?> GetProfileWithProductsAsync(int artistId);
     }
 }
