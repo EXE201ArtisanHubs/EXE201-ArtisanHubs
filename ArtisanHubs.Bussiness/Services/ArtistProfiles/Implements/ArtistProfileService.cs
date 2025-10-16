@@ -21,11 +21,13 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
         private readonly IMapper _mapper;
         private readonly IAccountRepository _accountRepo;
         private readonly ArtisanHubsDbContext _context;
+        private readonly PhotoService _photoService;
 
-        public ArtistProfileService(IArtistProfileRepository repo, IMapper mapper,IAccountRepository accountRepository, ArtisanHubsDbContext context)
+        public ArtistProfileService(IArtistProfileRepository repo, IMapper mapper, PhotoService photoService)
         {
             _repo = repo;
             _mapper = mapper;
+            _photoService = photoService;
             _accountRepo = accountRepository;
             _context = context;
         }
@@ -79,8 +81,17 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
                 accountToUpdate.Role = "Artist";
                 await _accountRepo.UpdateAsync(accountToUpdate);
 
-                // 3. Nếu cả 2 bước trên không có lỗi, commit transaction
-                await transaction.CommitAsync();
+                // Handle image upload
+                if (request.ProfileImage != null)
+                {
+                    var imageUrl = await _photoService.UploadImageAsync(request.ProfileImage);
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        entity.ProfileImage = imageUrl; // Adjust property name as needed
+                    }
+                }
+
+                await _repo.CreateAsync(entity);
 
                 var response = _mapper.Map<ArtistProfileResponse>(entity);
                 return ApiResponse<ArtistProfileResponse>.SuccessResponse(response, "Create profile and upgrade role to Artist successfully", 201);
