@@ -162,5 +162,18 @@ namespace ArtisanHubs.API.Controllers
             var result = await _productService.FilterProductsForCustomerAsync(filterRequest);
             return StatusCode(result.StatusCode, result);
         }
+
+        /// <summary>
+        /// Get all available products for customers with pagination and search
+        /// </summary>
+        [HttpGet("all-products")]
+        public async Task<IActionResult> GetAllProductsForCustomer(
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 10,
+            [FromQuery] string? searchTerm = null)
+        {
+            var result = await _productService.GetAllProductsForCustomerAsync(page, size, searchTerm);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }
