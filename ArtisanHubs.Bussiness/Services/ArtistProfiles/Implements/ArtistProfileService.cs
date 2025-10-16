@@ -23,7 +23,7 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
         private readonly ArtisanHubsDbContext _context;
         private readonly PhotoService _photoService;
 
-        public ArtistProfileService(IArtistProfileRepository repo, IMapper mapper, PhotoService photoService)
+        public ArtistProfileService(IArtistProfileRepository repo, IMapper mapper, PhotoService photoService, IAccountRepository accountRepository, ArtisanHubsDbContext context)
         {
             _repo = repo;
             _mapper = mapper;

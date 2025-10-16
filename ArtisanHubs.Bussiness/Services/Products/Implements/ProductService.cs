@@ -261,5 +261,124 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
                 return ApiResponse<IPaginate<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
+
+        public async Task<ApiResponse<IPaginate<ProductSummaryResponse>>> FilterProductsForCustomerAsync(ProductFilterRequest filterRequest)
+        {
+            try
+            {
+                // Build predicate for filtering
+                Expression<Func<Product, bool>>? predicate = BuildFilterPredicate(filterRequest);
+
+                // Build ordering function
+                Func<IQueryable<Product>, IOrderedQueryable<Product>>? orderBy = BuildOrderByFunction(filterRequest.SortBy, filterRequest.SortOrder);
+
+                // Get filtered and paginated products
+                var paginatedProducts = await _productRepo.GetFilteredProductsAsync(
+                    predicate,
+                    orderBy,
+                    filterRequest.Page,
+                    filterRequest.Size
+                );
+
+                // Map to ProductSummaryResponse
+                var mappedItems = _mapper.Map<IList<ProductSummaryResponse>>(paginatedProducts.Items);
+
+                // Create result with pagination info
+                var result = new Paginate<ProductSummaryResponse>
+                {
+                    Items = mappedItems,
+                    Page = paginatedProducts.Page,
+                    Size = paginatedProducts.Size,
+                    Total = paginatedProducts.Total,
+                    TotalPages = paginatedProducts.TotalPages
+                };
+
+                return ApiResponse<IPaginate<ProductSummaryResponse>>.SuccessResponse(
+                    result,
+                    "Filter products successfully."
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<IPaginate<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
+            }
+        }
+
+        private Expression<Func<Product, bool>>? BuildFilterPredicate(ProductFilterRequest filterRequest)
+        {
+            Expression<Func<Product, bool>>? predicate = null;
+
+            if (filterRequest.CategoryId.HasValue)
+            {
+                predicate = CombinePredicates(predicate, p => p.CategoryId == filterRequest.CategoryId.Value);
+            }
+
+            if (filterRequest.ArtistId.HasValue)
+            {
+                predicate = CombinePredicates(predicate, p => p.ArtistId == filterRequest.ArtistId.Value);
+            }
+
+            if (filterRequest.MinPrice.HasValue)
+            {
+                predicate = CombinePredicates(predicate, p => p.Price >= filterRequest.MinPrice.Value);
+            }
+
+            if (filterRequest.MaxPrice.HasValue)
+            {
+                predicate = CombinePredicates(predicate, p => p.Price <= filterRequest.MaxPrice.Value);
+            }
+
+            if (!string.IsNullOrEmpty(filterRequest.Status))
+            {
+                predicate = CombinePredicates(predicate, p => p.Status == filterRequest.Status);
+            }
+
+            if (!string.IsNullOrEmpty(filterRequest.Name))
+            {
+                predicate = CombinePredicates(predicate, p => p.Name.Contains(filterRequest.Name));
+            }
+
+            // Always filter for active products (you might want to adjust this based on your business logic)
+            predicate = CombinePredicates(predicate, p => p.Status == "Available");
+
+            return predicate;
+        }
+
+        private Expression<Func<Product, bool>>? CombinePredicates(
+            Expression<Func<Product, bool>>? expr1,
+            Expression<Func<Product, bool>> expr2)
+        {
+            if (expr1 == null)
+                return expr2;
+
+            var parameter = Expression.Parameter(typeof(Product));
+            var body = Expression.AndAlso(
+                Expression.Invoke(expr1, parameter),
+                Expression.Invoke(expr2, parameter)
+            );
+            return Expression.Lambda<Func<Product, bool>>(body, parameter);
+        }
+
+        private Func<IQueryable<Product>, IOrderedQueryable<Product>>? BuildOrderByFunction(string? sortBy, string? sortOrder)
+        {
+            if (string.IsNullOrEmpty(sortBy))
+                return query => query.OrderByDescending(p => p.CreatedAt);
+
+            var isDescending = !string.IsNullOrEmpty(sortOrder) && sortOrder.ToLower() == "desc";
+
+            return sortBy.ToLower() switch
+            {
+                "price" => isDescending
+                    ? query => query.OrderByDescending(p => p.Price)
+                    : query => query.OrderBy(p => p.Price),
+                "name" => isDescending
+                    ? query => query.OrderByDescending(p => p.Name)
+                    : query => query.OrderBy(p => p.Name),
+                "createdat" => isDescending
+                    ? query => query.OrderByDescending(p => p.CreatedAt)
+                    : query => query.OrderBy(p => p.CreatedAt),
+                _ => query => query.OrderByDescending(p => p.CreatedAt)
+            };
+        }
     }
 }
