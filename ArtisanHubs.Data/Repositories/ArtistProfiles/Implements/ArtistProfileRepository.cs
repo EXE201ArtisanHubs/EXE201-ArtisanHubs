@@ -59,11 +59,12 @@ namespace ArtisanHubs.Data.Repositories.ArtistProfiles.Implements
                                  .FirstOrDefaultAsync(p => p.AccountId == accountId);
         }
 
-        //public async Task<IEnumerable<Artistprofile>> GetAllArtistsAsync()
-        //{
-        //    return await _context.Artistprofiles
-        //                         .Include(a => a.Account) // nếu muốn lấy thông tin account (username, email…)
-        //                         .ToListAsync();
-        //}
+        public async Task<Artistprofile?> GetProfileWithProductsAsync(int artistId)
+        {
+            return await _context.Artistprofiles
+                .Include(a => a.Products) // <-- Include danh sách sản phẩm
+                .Include(a => a.Achievements) // <-- Include luôn cả thành tích
+                .FirstOrDefaultAsync(a => a.ArtistId == artistId);
+        }
     }
 }

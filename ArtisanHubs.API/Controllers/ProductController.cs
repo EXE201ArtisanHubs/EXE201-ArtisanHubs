@@ -133,11 +133,46 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpGet("category/{categoryId}")]
         public async Task<IActionResult> GetProductsByCategoryIdForCustomer(int categoryId)
         {
             var result = await _productService.GetProductsByCategoryIdForCustomerAsync(categoryId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        //[Authorize]
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchProductsByName(
+            [FromQuery] string? name = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 10)
+        {
+            var result = await _productService.SearchProductsByNameForCustomerAsync(name, page, size);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        /// <summary>
+        /// Filter products for customers with multiple criteria
+        /// </summary>
+        //[Authorize]
+        [HttpGet("filter")]
+        public async Task<IActionResult> FilterProducts([FromQuery] ProductFilterRequest filterRequest)
+        {
+            var result = await _productService.FilterProductsForCustomerAsync(filterRequest);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        /// <summary>
+        /// Get all available products for customers with pagination and search
+        /// </summary>
+        [HttpGet("all-products")]
+        public async Task<IActionResult> GetAllProductsForCustomer(
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 10,
+            [FromQuery] string? searchTerm = null)
+        {
+            var result = await _productService.GetAllProductsForCustomerAsync(page, size, searchTerm);
             return StatusCode(result.StatusCode, result);
         }
     }

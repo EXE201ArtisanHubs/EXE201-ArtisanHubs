@@ -51,55 +51,100 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
             }
         }
 
-        // Tạo mới profile cho nghệ nhân
+        //// Tạo mới profile cho nghệ nhân
+        //public async Task<ApiResponse<ArtistProfileResponse>> CreateMyProfileAsync(int accountId, ArtistProfileRequest request)
+        //{
+        //    await using var transaction = await _context.Database.BeginTransactionAsync();           
+        //    try
+        //    {
+        //        // Kiểm tra các điều kiện như cũ
+        //        var existingProfile = await _repo.GetProfileByAccountIdAsync(accountId);
+        //        if (existingProfile != null)
+        //        {
+        //            return ApiResponse<ArtistProfileResponse>.FailResponse("Artist profile already exists for this account.", 409);
+        //        }
+
+        //        var accountToUpdate = await _accountRepo.GetByIdAsync(accountId);
+        //        if (accountToUpdate == null || accountToUpdate.Role != "Customer")
+        //        {
+        //            return ApiResponse<ArtistProfileResponse>.FailResponse("Only accounts with 'Customer' role can create an artist profile.", 403);
+        //        }
+
+        //        // 1. Dùng Repository để tạo profile.
+        //        // Repository này sẽ gọi SaveChanges() lần 1.
+        //        var entity = _mapper.Map<Artistprofile>(request);
+        //        entity.AccountId = accountId;
+        //        entity.CreatedAt = DateTime.UtcNow;
+        //        await _repo.CreateAsync(entity);
+
+        //        // 2. Dùng Repository để cập nhật role.
+        //        // Repository này sẽ gọi SaveChanges() lần 2.
+        //        accountToUpdate.Role = "Artist";
+        //        await _accountRepo.UpdateAsync(accountToUpdate);
+
+        //        // Handle image upload
+        //        if (request.ProfileImage != null)
+        //        {
+        //            var imageUrl = await _photoService.UploadImageAsync(request.ProfileImage);
+        //            if (!string.IsNullOrEmpty(imageUrl))
+        //            {
+        //                entity.ProfileImage = imageUrl; // Adjust property name as needed
+        //            }
+        //        }
+
+        //        await _repo.CreateAsync(entity);
+
+        //        var response = _mapper.Map<ArtistProfileResponse>(entity);
+        //        return ApiResponse<ArtistProfileResponse>.SuccessResponse(response, "Create profile and upgrade role to Artist successfully", 201);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // 4. Nếu có bất kỳ lỗi nào, rollback tất cả thay đổi
+        //        await transaction.RollbackAsync();
+        //        return ApiResponse<ArtistProfileResponse>.FailResponse($"Error: {ex.Message}", 500);
+        //    }
+        //}
         public async Task<ApiResponse<ArtistProfileResponse>> CreateMyProfileAsync(int accountId, ArtistProfileRequest request)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync();           
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Kiểm tra các điều kiện như cũ
                 var existingProfile = await _repo.GetProfileByAccountIdAsync(accountId);
                 if (existingProfile != null)
-                {
                     return ApiResponse<ArtistProfileResponse>.FailResponse("Artist profile already exists for this account.", 409);
-                }
 
                 var accountToUpdate = await _accountRepo.GetByIdAsync(accountId);
                 if (accountToUpdate == null || accountToUpdate.Role != "Customer")
-                {
                     return ApiResponse<ArtistProfileResponse>.FailResponse("Only accounts with 'Customer' role can create an artist profile.", 403);
-                }
 
-                // 1. Dùng Repository để tạo profile.
-                // Repository này sẽ gọi SaveChanges() lần 1.
+                // 1️⃣ Tạo profile mới
                 var entity = _mapper.Map<Artistprofile>(request);
                 entity.AccountId = accountId;
                 entity.CreatedAt = DateTime.UtcNow;
-                await _repo.CreateAsync(entity);
 
-                // 2. Dùng Repository để cập nhật role.
-                // Repository này sẽ gọi SaveChanges() lần 2.
+                await _repo.CreateAsync(entity); // ✅ chỉ gọi 1 lần
+
+                // 2️⃣ Cập nhật role
                 accountToUpdate.Role = "Artist";
                 await _accountRepo.UpdateAsync(accountToUpdate);
 
-                // Handle image upload
+                // 3️⃣ Upload ảnh (cập nhật sau khi có URL)
                 if (request.ProfileImage != null)
                 {
                     var imageUrl = await _photoService.UploadImageAsync(request.ProfileImage);
                     if (!string.IsNullOrEmpty(imageUrl))
                     {
-                        entity.ProfileImage = imageUrl; // Adjust property name as needed
+                        entity.ProfileImage = imageUrl;
+                        await _repo.UpdateAsync(entity); // chỉ update, không create lại
                     }
                 }
 
-                await _repo.CreateAsync(entity);
-
                 var response = _mapper.Map<ArtistProfileResponse>(entity);
+                await transaction.CommitAsync();
                 return ApiResponse<ArtistProfileResponse>.SuccessResponse(response, "Create profile and upgrade role to Artist successfully", 201);
             }
             catch (Exception ex)
             {
-                // 4. Nếu có bất kỳ lỗi nào, rollback tất cả thay đổi
                 await transaction.RollbackAsync();
                 return ApiResponse<ArtistProfileResponse>.FailResponse($"Error: {ex.Message}", 500);
             }
