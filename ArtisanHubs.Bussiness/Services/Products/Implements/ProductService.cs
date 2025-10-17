@@ -78,6 +78,46 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
         //        return ApiResponse<IEnumerable<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
         //    }
         //}
+        //public async Task<ApiResponse<ArtistShopResponse>> GetMyProductsAsync(int artistId)
+        //{
+        //    try
+        //    {
+        //        // 1. Lấy profile nghệ nhân bằng artistId
+        //        var artistProfile = await _artistProfileRepo.GetByIdAsync(artistId);
+
+        //        if (artistProfile == null)
+        //        {
+        //            return ApiResponse<ArtistShopResponse>.FailResponse("Artist not found.", 404);
+        //        }
+
+        //        // 2. Lấy danh sách sản phẩm của nghệ nhân
+        //        var products = await _productRepo.GetProductsByArtistIdAsync(artistId);
+
+        //        // 3. Kiểm tra nếu artist không có product nào
+        //        if (products == null || !products.Any())
+        //        {
+        //            return ApiResponse<ArtistShopResponse>.FailResponse("This artist doesn't have any products yet.", 404);
+        //        }
+
+        //        // 4. Dùng AutoMapper để map các đối tượng entity sang DTO
+        //        var profileResponse = _mapper.Map<ArtistProfileResponse>(artistProfile);
+        //        var productsResponse = _mapper.Map<IEnumerable<ProductSummaryResponse>>(products);
+
+        //        // 5. Tạo đối tượng response cuối cùng
+        //        var shopResponse = new ArtistShopResponse
+        //        {
+        //            ArtistProfile = profileResponse,
+        //            Products = productsResponse
+        //        };
+
+        //        return ApiResponse<ArtistShopResponse>.SuccessResponse(shopResponse, "Get artist shop successfully.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return ApiResponse<ArtistShopResponse>.FailResponse($"An error occurred: {ex.Message}", 500);
+        //    }
+        //}
+
         public async Task<ApiResponse<ArtistShopResponse>> GetMyProductsAsync(int artistId)
         {
             try
@@ -334,18 +374,17 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
                 predicate = CombinePredicates(predicate, p => p.Price <= filterRequest.MaxPrice.Value);
             }
 
+            // SỬA Ở ĐÂY: Chỉ filter khi status được cung cấp, không có else nữa
             if (!string.IsNullOrEmpty(filterRequest.Status))
             {
                 predicate = CombinePredicates(predicate, p => p.Status == filterRequest.Status);
             }
+            // BỎ HOÀN TOÀN KHỐI ELSE
 
             if (!string.IsNullOrEmpty(filterRequest.Name))
             {
                 predicate = CombinePredicates(predicate, p => p.Name.Contains(filterRequest.Name));
             }
-
-            // Always filter for active products (you might want to adjust this based on your business logic)
-            predicate = CombinePredicates(predicate, p => p.Status == "Available");
 
             return predicate;
         }
@@ -387,43 +426,43 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             };
         }
 
-        public async Task<ApiResponse<IPaginate<ProductSummaryResponse>>> GetAllProductsForCustomerAsync(int page = 1, int size = 10, string? searchTerm = null)
-        {
-            try
-            {
-                // Tạo predicate để lọc sản phẩm có sẵn và search term nếu có
-                Expression<Func<Product, bool>>? predicate = p => p.Status == "Available";
+        //public async Task<ApiResponse<IPaginate<ProductSummaryResponse>>> GetAllProductsForCustomerAsync(int page = 1, int size = 10, string? searchTerm = null)
+        //{
+        //    try
+        //    {
+        //        // Tạo predicate để lọc sản phẩm có sẵn và search term nếu có
+        //        Expression<Func<Product, bool>>? predicate = p => p.Status == "Available";
 
-                if (!string.IsNullOrEmpty(searchTerm))
-                {
-                    predicate = CombinePredicates(predicate, p => p.Name.Contains(searchTerm));
-                }
+        //        if (!string.IsNullOrEmpty(searchTerm))
+        //        {
+        //            predicate = CombinePredicates(predicate, p => p.Name.Contains(searchTerm));
+        //        }
 
-                // Gọi repository để lấy dữ liệu có phân trang
-                var paginatedProducts = await _productRepo.GetPagedAsync(predicate, page, size);
+        //        // Gọi repository để lấy dữ liệu có phân trang
+        //        var paginatedProducts = await _productRepo.GetPagedAsync(predicate, page, size);
 
-                // Map từ IPaginate<Product> sang IPaginate<ProductSummaryResponse>
-                var mappedItems = _mapper.Map<IList<ProductSummaryResponse>>(paginatedProducts.Items);
+        //        // Map từ IPaginate<Product> sang IPaginate<ProductSummaryResponse>
+        //        var mappedItems = _mapper.Map<IList<ProductSummaryResponse>>(paginatedProducts.Items);
 
-                // Tạo IPaginate<ProductSummaryResponse> mới với dữ liệu đã map
-                var result = new Paginate<ProductSummaryResponse>
-                {
-                    Items = mappedItems,
-                    Page = paginatedProducts.Page,
-                    Size = paginatedProducts.Size,
-                    Total = paginatedProducts.Total,
-                    TotalPages = paginatedProducts.TotalPages
-                };
+        //        // Tạo IPaginate<ProductSummaryResponse> mới với dữ liệu đã map
+        //        var result = new Paginate<ProductSummaryResponse>
+        //        {
+        //            Items = mappedItems,
+        //            Page = paginatedProducts.Page,
+        //            Size = paginatedProducts.Size,
+        //            Total = paginatedProducts.Total,
+        //            TotalPages = paginatedProducts.TotalPages
+        //        };
 
-                return ApiResponse<IPaginate<ProductSummaryResponse>>.SuccessResponse(
-                    result,
-                    "Get all products successfully."
-                );
-            }
-            catch (Exception ex)
-            {
-                return ApiResponse<IPaginate<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
-            }
-        }
+        //        return ApiResponse<IPaginate<ProductSummaryResponse>>.SuccessResponse(
+        //            result,
+        //            "Get all products successfully."
+        //        );
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return ApiResponse<IPaginate<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
+        //    }
+        //}
     }
 }

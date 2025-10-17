@@ -65,6 +65,6 @@ namespace ArtisanHubs.Data.Repositories.ArtistProfiles.Implements
                 .Include(a => a.Products) // <-- Include danh sách sản phẩm
                 .Include(a => a.Achievements) // <-- Include luôn cả thành tích
                 .FirstOrDefaultAsync(a => a.ArtistId == artistId);
-        }
+        }     
     }
 }

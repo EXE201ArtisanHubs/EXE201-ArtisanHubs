@@ -13,6 +13,7 @@ namespace ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces
     public interface IArtistProfileRepository : IGenericRepository<Artistprofile>
     {
         Task<IEnumerable<Artistprofile>> GetAllAsync();
+        Task<Artistprofile?> GetProfileWithProductsAsync(int artistID);
         Task<Artistprofile?> GetProfileByAccountIdAsync(int id);
         Task<IPaginate<Artistprofile>> GetPagedAsync(
         Expression<Func<Artistprofile, bool>>? predicate,
@@ -20,6 +21,7 @@ namespace ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces
         int size,
         string? searchTerm = null
     );
+        
         //Task<IEnumerable<Artistprofile>> GetAllArtistsAsync();
     }
 }
