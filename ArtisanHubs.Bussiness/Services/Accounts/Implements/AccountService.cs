@@ -189,54 +189,81 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             }
         }
 
+        //public async Task<ApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
+        //{
+        //    var account = await _repo.GetByConditionAsync(a => a.Email == request.Email);
+
+        //    if (account != null)
+        //    {
+        //        // 1. Tạo token ngẫu nhiên, an toàn
+        //        var tokenBytes = RandomNumberGenerator.GetBytes(64);
+        //        var resetToken = Convert.ToBase64String(tokenBytes)
+        //                                .Replace("/", "-")
+        //                                .Replace("+", "_")
+        //                                .Replace("=", ""); // URL safe token
+
+        //        // 2. Đặt thời gian hết hạn (ví dụ: 15 phút)
+        //        account.PasswordResetToken = resetToken;
+        //        account.ResetTokenExpires = DateTime.UtcNow.AddMinutes(15);
+
+        //        await _repo.UpdateAsync(account);
+
+        //        // 3. Gửi email
+        //        // Quan trọng: URL này phải trỏ đến trang Reset Password trên Frontend của bạn
+        //        // Thay 3000 bằng cổng thực tế của frontend bạn
+        //        var resetLink = $"http://localhost:5173/reset-password?token={resetToken}";
+        //        await _emailService.SendPasswordResetEmailAsync(account.Email, resetLink);
+        //    }
+
+        //    return ApiResponse<object>.SuccessResponse(null, "If an account with that email exists, a password reset link has been sent.");
+        //}
         public async Task<ApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
             var account = await _repo.GetByConditionAsync(a => a.Email == request.Email);
+            if (account== null)
+            {
+                return ApiResponse<object>.FailResponse("The email address you entered does not exist.", 404);
+            }
 
             if (account != null)
             {
-                // 1. Tạo token ngẫu nhiên, an toàn
-                var tokenBytes = RandomNumberGenerator.GetBytes(64);
-                var resetToken = Convert.ToBase64String(tokenBytes)
-                                        .Replace("/", "-")
-                                        .Replace("+", "_")
-                                        .Replace("=", ""); // URL safe token
+                // 1. Tạo mã OTP ngắn, dễ nhớ (ví dụ: 6 chữ số)
+                var random = new Random();
+                var otpCode = random.Next(100000, 999999).ToString();
 
-                // 2. Đặt thời gian hết hạn (ví dụ: 15 phút)
-                account.PasswordResetToken = resetToken;
-                account.ResetTokenExpires = DateTime.UtcNow.AddMinutes(15);
+                // 2. Lưu mã OTP và thời gian hết hạn (ví dụ: 10 phút)
+                account.PasswordResetToken = otpCode; // Tận dụng cột này để lưu OTP
+                account.ResetTokenExpires = DateTime.UtcNow.AddMinutes(10);
 
                 await _repo.UpdateAsync(account);
 
-                // 3. Gửi email
-                // Quan trọng: URL này phải trỏ đến trang Reset Password trên Frontend của bạn
-                // Thay 3000 bằng cổng thực tế của frontend bạn
-                var resetLink = $"http://localhost:3000/reset-password?token={resetToken}";
-                await _emailService.SendPasswordResetEmailAsync(account.Email, resetLink);
+                // 3. Gửi email chứa mã OTP
+                await _emailService.SendPasswordResetOtpAsync(account.Email, otpCode);
             }
 
-            return ApiResponse<object>.SuccessResponse(null, "If an account with that email exists, a password reset link has been sent.");
+            // Luôn trả về thông báo chung chung để bảo mật
+            return ApiResponse<object>.SuccessResponse(null, "If an account with that email exists, a code has been sent.");
         }
 
-        public async Task<ApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request)
+        public async Task<ApiResponse<object>> ResetPasswordWithOtpAsync(ResetPasswordWithOtpRequest request)
         {
-            var account = await _repo.GetByConditionAsync(a => a.PasswordResetToken == request.Token);
+            // Tìm tài khoản theo Email, không phải token
+            var account = await _repo.GetByConditionAsync(a => a.Email == request.Email);
 
-            if (account == null || account.ResetTokenExpires < DateTime.UtcNow)
+            // Kiểm tra xem mã OTP có đúng không và còn hạn không
+            if (account == null || account.PasswordResetToken != request.OtpCode || account.ResetTokenExpires < DateTime.UtcNow)
             {
-                return ApiResponse<object>.FailResponse("Invalid or expired password reset token.", 400);
+                return ApiResponse<object>.FailResponse("Invalid or expired OTP code.", 400);
             }
 
-            // --- SỬA LẠI PHẦN NÀY ---
-
-            // Dùng _passwordHasher để hash mật khẩu mới, giống hệt như lúc đăng ký
+            // Hash mật khẩu mới
             account.PasswordHash = _passwordHasher.HashPassword(account, request.NewPassword);
 
-            // Vô hiệu hóa token
+            // Vô hiệu hóa OTP sau khi dùng xong
             account.PasswordResetToken = null;
             account.ResetTokenExpires = null;
 
-            _repo.UpdateAsync(account);
+            await _repo.UpdateAsync(account);
 
             return ApiResponse<object>.SuccessResponse(null, "Password has been reset successfully.");
         }

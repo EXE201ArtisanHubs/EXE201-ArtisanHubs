@@ -23,7 +23,8 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Interfaces
         Task<ApiResponse<bool>> DeleteAsync(int id);
         Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request);
         Task<ApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);
-        Task<ApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
+        //Task<ApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
+        Task<ApiResponse<object>> ResetPasswordWithOtpAsync(ResetPasswordWithOtpRequest request);
         Task<ApiResponse<LoginResponse>> LoginWithGoogleAsync(GoogleLoginRequest request);
         Task<ApiResponse<AccountResponse?>> GetMyAccountAsync(int accountId);
     }
