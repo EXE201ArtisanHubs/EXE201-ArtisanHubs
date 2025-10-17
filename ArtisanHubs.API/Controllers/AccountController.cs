@@ -152,11 +152,13 @@ namespace ArtisanHubs.API.Controllers
         /// <summary>
         /// Hoàn tất quy trình quên mật khẩu với token và mật khẩu mới
         /// </summary>
-        [HttpPost("reset-password")]
+        [HttpPost("reset-password-otp")] // <-- (Optional) Consider renaming the route for clarity
         [AllowAnonymous]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        public async Task<IActionResult> ResetPasswordWithOtp([FromBody] ResetPasswordWithOtpRequest request) // <-- CHANGE THIS
         {
-            var result = await _accountService.ResetPasswordAsync(request);
+            // Now the 'request' object has Email, OtpCode, and NewPassword
+            var result = await _accountService.ResetPasswordWithOtpAsync(request);
+
             return StatusCode(result.StatusCode, result);
         }
 

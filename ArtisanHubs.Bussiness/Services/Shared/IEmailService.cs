@@ -8,6 +8,7 @@ namespace ArtisanHubs.Bussiness.Services.Shared
 {
     public interface IEmailService
     {
-        Task SendPasswordResetEmailAsync(string toEmail, string resetLink);
+        //Task SendPasswordResetEmailAsync(string toEmail, string resetLink);
+        Task SendPasswordResetOtpAsync(string toEmail, string otpCode);
     }
 }
