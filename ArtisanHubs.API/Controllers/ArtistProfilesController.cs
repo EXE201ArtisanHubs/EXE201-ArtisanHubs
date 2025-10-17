@@ -82,11 +82,15 @@ namespace ArtisanHubs.API.Controllers
 
         // Lấy danh sách tất cả profile (có thể cho Admin hoặc công khai)
         //[Authorize(Roles = "Admin, Customer")]
-        [HttpGet]
-        public async Task<IActionResult> GetAllProfiles()
+        [HttpGet()]
+        public async Task<IActionResult> GetAllPaged(
+    [FromQuery] int page = 1,
+    [FromQuery] int size = 10,
+    [FromQuery] string? searchTerm = null
+)
         {
-            var result = await _artistProfileService.GetAllProfilesAsync();
-            return StatusCode(result.StatusCode, result);
+            var result = await _artistProfileService.GetAllProfilesAsync(page, size, searchTerm);
+            return Ok(result);
         }
 
         // Xóa một profile (chức năng này thường dành cho Admin)

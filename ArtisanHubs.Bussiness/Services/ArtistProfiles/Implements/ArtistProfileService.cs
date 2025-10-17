@@ -1,17 +1,18 @@
-﻿using ArtisanHubs.API.DTOs.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces;
 using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.Data.Repositories.Accounts.Interfaces;
 using ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces;
 using ArtisanHubs.DTOs.DTO.Reponse.ArtistProfile;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
 {
@@ -177,17 +178,23 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
         }
 
         // Lấy profile tất cả nghệ nhân
-        public async Task<ApiResponse<IEnumerable<ArtistProfileResponse>>> GetAllProfilesAsync()
+        public async Task<ApiResponse<IPaginate<Artistprofile>>> GetAllProfilesAsync(int page, int size, string? searchTerm = null)
         {
             try
             {
-               var profiles = await _repo.GetAllAsync();
-                var response = _mapper.Map<IEnumerable<ArtistProfileResponse>>(profiles);
-                return ApiResponse<IEnumerable<ArtistProfileResponse>>.SuccessResponse(response, "Get all profiles successfully");
+                // Lấy danh sách có phân trang
+                var result = await _repo.GetPagedAsync(null, page, size, searchTerm);
+
+                // ✅ Trả về gói trong ApiResponse mà KHÔNG ép kiểu
+                return ApiResponse<IPaginate<Artistprofile>>.SuccessResponse(
+                    result,
+                    "Get paginated accounts successfully"
+                );
             }
             catch (Exception ex)
             {
-               return ApiResponse<IEnumerable<ArtistProfileResponse>>.FailResponse($"Error: {ex.Message}", 500);
+                // ✅ Bắt lỗi và trả về fail response
+                return ApiResponse<IPaginate<Artistprofile>>.FailResponse($"Error: {ex.Message}");
             }
         }
 
