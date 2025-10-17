@@ -97,6 +97,8 @@ builder.Services.AddSingleton<PayOSService>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<OrderPaymentService>();
 builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
+builder.Services.AddHttpClient<GHTKService>();
+
 
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();

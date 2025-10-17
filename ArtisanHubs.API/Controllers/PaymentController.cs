@@ -1,4 +1,5 @@
 ﻿using ArtisanHubs.Data.Entities;
+using ArtisanHubs.DTOs.DTO.Request;
 using ArtisanHubs.DTOs.DTO.Request.Payment;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,4 +35,19 @@ public class PaymentsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPost("refund/{orderId}")]
+    public async Task<IActionResult> RefundOrder(int orderId, [FromBody] string reason)
+    {
+        try
+        {
+            var message = await _orderPaymentService.RefundOrderAsync(orderId, reason);
+            return Ok(new { message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
 }
