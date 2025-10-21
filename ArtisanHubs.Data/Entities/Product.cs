@@ -17,6 +17,8 @@ public partial class Product
 
     public string? Story { get; set; }
 
+    public float Weight { get; set; }
+
     public decimal Price { get; set; }
 
     public decimal? DiscountPrice { get; set; }
