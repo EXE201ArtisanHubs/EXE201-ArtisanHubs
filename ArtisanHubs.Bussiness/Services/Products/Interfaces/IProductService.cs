@@ -21,7 +21,7 @@ namespace ArtisanHubs.Bussiness.Services.Products.Interfaces
         Task<ApiResponse<bool>> DeleteProductAsync(int productId, int artistId);
         Task<ApiResponse<ProductDetailResponse>> GetProductByIdForCustomerAsync(int productId);
         Task<ApiResponse<IEnumerable<ProductSummaryResponse>>> GetProductsByCategoryIdForCustomerAsync(int categoryId);
-        Task<ApiResponse<IPaginate<Product>>> GetAllProductAsync(int page, int size, string? searchTerm = null);
+        Task<ApiResponse<IPaginate<ProductDetailResponse>>> GetAllProductAsync(int page, int size, string? searchTerm = null);
         Task<ApiResponse<IPaginate<ProductSummaryResponse>>> SearchProductsByNameForCustomerAsync(string? name, int page, int size);
         Task<ApiResponse<IPaginate<ProductSummaryResponse>>> FilterProductsForCustomerAsync(ProductFilterRequest filterRequest);
         //Task<ApiResponse<IPaginate<ProductSummaryResponse>>> GetAllProductsForCustomerAsync(int page = 1, int size = 10, string? searchTerm = null);

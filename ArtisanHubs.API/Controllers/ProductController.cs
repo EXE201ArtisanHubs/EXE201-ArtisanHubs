@@ -36,7 +36,6 @@ namespace ArtisanHubs.API.Controllers
             return accountId;
         }
 
-        //[Authorize]
         [HttpGet("all")]
         public async Task<IActionResult> GetAllCategories(
         [FromQuery] int page = 1,
@@ -47,7 +46,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Artist")]
+        //[Authorize(Roles = "Artist")]
         [HttpPost]
         public async Task<IActionResult> CreateProduct([FromForm] CreateProductRequest request)
         {
@@ -66,7 +65,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Artist")]
+        //[Authorize(Roles = "Artist")]
         [HttpGet("{productId}")]
         public async Task<IActionResult> GetMyProductById(int productId)
         {
@@ -78,7 +77,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize]
+       // [Authorize]
         [HttpGet("customer/{productId}")]
         public async Task<IActionResult> GetProductByIdForCustomer(int productId)
         {
@@ -94,7 +93,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Artist")]
+        //[Authorize(Roles = "Artist")]
         [HttpGet]
         public async Task<IActionResult> GetMyProducts()
         {
@@ -109,7 +108,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Artist")]
+        //[Authorize(Roles = "Artist")]
         [HttpPut("{productId}")]
         public async Task<IActionResult> UpdateProduct(int productId, [FromBody] UpdateProductRequest request)
         {
@@ -121,7 +120,7 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        [Authorize(Roles = "Artist")]
+        //[Authorize(Roles = "Artist")]
         [HttpDelete("{productId}")]
         public async Task<IActionResult> DeleteProduct(int productId)
         {
@@ -133,7 +132,6 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        //[Authorize]
         [HttpGet("category/{categoryId}")]
         public async Task<IActionResult> GetProductsByCategoryIdForCustomer(int categoryId)
         {
@@ -141,7 +139,6 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        //[Authorize]
         [HttpGet("search")]
         public async Task<IActionResult> SearchProductsByName(
             [FromQuery] string? name = null,
