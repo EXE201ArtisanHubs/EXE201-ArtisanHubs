@@ -95,6 +95,11 @@ namespace ArtisanHubs.Bussiness.Services.Carts.Implements
             }
         }
 
+        public async Task<Cart?> GetCartByIdAsync(int cartId)
+        {
+            return await _cartRepository.GetCartByIdAsync(cartId);
+        }
+
         public async Task<ApiResponse<CartResponse?>> GetCartByAccountIdAsync(int accountId)
         {
             try

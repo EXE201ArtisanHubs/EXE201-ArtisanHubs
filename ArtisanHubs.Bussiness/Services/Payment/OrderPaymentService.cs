@@ -50,7 +50,7 @@ public class OrderPaymentService
 
         // 2. Create payment link
         var result = await _payOSService.CreatePaymentLinkAsync(
-            orderCode: order.OrderId.ToString(),
+            req.OrderId,
             req.amount,
             req.description,
             req.returnUrl,

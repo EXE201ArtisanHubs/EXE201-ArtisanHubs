@@ -151,11 +151,11 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
         }
 
         // Cập nhật profile cho nghệ nhân
+        // Cập nhật profile cho nghệ nhân
         public async Task<ApiResponse<ArtistProfileResponse?>> UpdateMyProfileAsync(int accountId, ArtistProfileRequest request)
         {
             try
             {
-                // Thay vì GetByAccountIdAsync, ta dùng GetQueryable để Include
                 var existing = await _repo.GetQueryable()
                                           .Include(p => p.Achievements)
                                           .FirstOrDefaultAsync(p => p.AccountId == accountId);
@@ -165,6 +165,16 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
 
                 // Mapper sẽ cập nhật các trường cơ bản và xử lý danh sách Achievements
                 _mapper.Map(request, existing);
+
+                    if (request.ProfileImage != null)
+                    {
+                        // Upload the image and get the URL
+                        var imageUrl = await _photoService.UploadImageAsync(request.ProfileImage);
+                        if (!string.IsNullOrEmpty(imageUrl))
+                        {
+                            existing.ProfileImage = imageUrl; // Assign the uploaded image URL to the profile
+                        }
+                    }
 
                 await _repo.UpdateAsync(existing);
 

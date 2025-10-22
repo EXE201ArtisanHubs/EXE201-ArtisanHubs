@@ -11,6 +11,8 @@ namespace ArtisanHubs.Data.Repositories.Carts.Interfaces
     public interface ICartRepository : IGenericRepository<Cart>
     {
         Task<Cart?> GetCartByAccountIdAsync(int accountId);
+
+        Task<Cart?> GetCartByIdAsync(int cartId); // Add this line
         // Tạo giỏ hàng mới
         Task CreateCartAsync(Cart cart);
 

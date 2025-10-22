@@ -45,6 +45,17 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             _mapper.Map(request, existingProduct);
             existingProduct.UpdatedAt = DateTime.UtcNow;
 
+            // Update image if provided
+            if (request.Images != null)
+            {
+                // Upload the image and get the URL
+                var imageUrl = await _photoService.UploadImageAsync(request.Images);
+                if (!string.IsNullOrEmpty(imageUrl))
+                {
+                    existingProduct.Images = imageUrl;
+                }
+            }
+
             await _productRepo.UpdateAsync(existingProduct);
             var response = _mapper.Map<ProductResponse>(existingProduct);
             return ApiResponse<ProductResponse?>.SuccessResponse(response, "Product updated successfully.");

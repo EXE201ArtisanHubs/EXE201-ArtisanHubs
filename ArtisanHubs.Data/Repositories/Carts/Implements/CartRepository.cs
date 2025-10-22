@@ -17,7 +17,13 @@ namespace ArtisanHubs.Data.Repositories.Carts.Implements
         {
             _context = context;
         }
-
+        public async Task<Cart?> GetCartByIdAsync(int cartId)
+        {
+            return await _context.Carts
+                .Include(c => c.CartItems)
+                    .ThenInclude(i => i.Product)
+                .FirstOrDefaultAsync(c => c.Id == cartId);
+        }
         public async Task CreateCartAsync(Cart cart)
         {
             await CreateAsync(cart);

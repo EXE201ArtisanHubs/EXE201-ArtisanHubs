@@ -111,7 +111,7 @@ namespace ArtisanHubs.API.Controllers
 
         [Authorize(Roles = "Artist")]
         [HttpPut("{productId}")]
-        public async Task<IActionResult> UpdateProduct(int productId, [FromBody] UpdateProductRequest request)
+        public async Task<IActionResult> UpdateProduct(int productId, [FromForm] UpdateProductRequest request)
         {
             var accountId = GetCurrentAccountId();
             var artistProfile = await _artistProfileRepo.GetProfileByAccountIdAsync(accountId);

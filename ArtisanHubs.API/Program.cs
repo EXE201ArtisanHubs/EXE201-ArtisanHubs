@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using ArtisanHubs.Bussiness.Mapping;
+using ArtisanHubs.Bussiness.Services;
 using ArtisanHubs.Bussiness.Services.Accounts.Implements;
 using ArtisanHubs.Bussiness.Services.Accounts.Interfaces;
 using ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements;
@@ -98,9 +99,14 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<OrderPaymentService>();
 builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
 builder.Services.AddHttpClient<GHTKService>();
+builder.Services.AddScoped<OrderDetailService>();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
-
-builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 
 var cloudName = configuration["CloudinarySettings:CloudName"];

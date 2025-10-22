@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace ArtisanHubs.Data.Entities;
 
@@ -17,6 +19,7 @@ public partial class Product
 
     public string? Story { get; set; }
 
+    [Column("weight")]
     public float Weight { get; set; }
 
     public decimal Price { get; set; }
@@ -41,6 +44,7 @@ public partial class Product
 
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
+    [JsonIgnore]
     public virtual ICollection<Orderdetail> Orderdetails { get; set; } = new List<Orderdetail>();
     public virtual ICollection<FavoriteProduct> FavoriteProducts { get; set; } = new List<FavoriteProduct>();
 }

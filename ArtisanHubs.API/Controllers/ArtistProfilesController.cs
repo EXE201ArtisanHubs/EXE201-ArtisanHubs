@@ -65,7 +65,7 @@ namespace ArtisanHubs.API.Controllers
         // Cập nhật profile cho chính nghệ nhân đang đăng nhập
         [Authorize(Roles = "Artist")]
         [HttpPut()]
-        public async Task<IActionResult> UpdateMyProfile([FromBody] ArtistProfileRequest request)
+        public async Task<IActionResult> UpdateMyProfile([FromForm] ArtistProfileRequest request)
         {
             if (!ModelState.IsValid)
             {

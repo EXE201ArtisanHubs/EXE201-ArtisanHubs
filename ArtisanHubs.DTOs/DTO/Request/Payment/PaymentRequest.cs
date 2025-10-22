@@ -9,6 +9,7 @@ namespace ArtisanHubs.DTOs.DTO.Request.Payment
     public class PaymentRequest
     {
         public int AccountId { get; set; }
+        public string OrderId { get; set; }
         public int amount { get; set; }
         public string description { get; set; }
         public string returnUrl { get; set; }
