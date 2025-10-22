@@ -262,24 +262,54 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             }
         }
 
-        public async Task<ApiResponse<IPaginate<Product>>> GetAllProductAsync(int page, int size, string? searchTerm = null)
+        //public async Task<ApiResponse<IPaginate<ProductSummaryResponse>>> GetAllProductAsync(int page, int size, string? searchTerm = null)
+        //{
+        //    try
+        //    {
+        //        // Lấy danh sách category có phân trang
+        //        var result = await _productRepo.GetPagedAsync(null, page, size, searchTerm);
+        //        var pagedSummary = _mapper.Map<IPaginate<ProductSummaryResponse>>(result);
+        //        return ApiResponse<IPaginate<ProductSummaryResponse>>.SuccessResponse(
+        //            pagedSummary,
+        //            "Get paginated categories successfully"
+        //        );
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return ApiResponse<IPaginate<ProductSummaryResponse>>.FailResponse($"Error: {ex.Message}");
+        //    }
+        //}
+
+        public async Task<ApiResponse<IPaginate<ProductDetailResponse>>> GetAllProductAsync(int page, int size, string? searchTerm = null)
         {
             try
             {
-                // Lấy danh sách category có phân trang
+                // Lấy danh sách products có phân trang
                 var result = await _productRepo.GetPagedAsync(null, page, size, searchTerm);
 
-                return ApiResponse<IPaginate<Product>>.SuccessResponse(
-                    result,
-                    "Get paginated categories successfully"
+                // Map từ IPaginate<Product> sang IPaginate<ProductSummaryResponse>
+                var mappedItems = _mapper.Map<IList<ProductDetailResponse>>(result.Items);
+
+                // Tạo IPaginate<ProductSummaryResponse> mới với dữ liệu đã map
+                var mappedResult = new Paginate<ProductDetailResponse>
+                {
+                    Items = mappedItems,
+                    Page = result.Page,
+                    Size = result.Size,
+                    Total = result.Total,
+                    TotalPages = result.TotalPages
+                };
+
+                return ApiResponse<IPaginate<ProductDetailResponse>>.SuccessResponse(
+                    mappedResult,
+                    "Get paginated products successfully"
                 );
             }
             catch (Exception ex)
             {
-                return ApiResponse<IPaginate<Product>>.FailResponse($"Error: {ex.Message}");
+                return ApiResponse<IPaginate<ProductDetailResponse>>.FailResponse($"Error: {ex.Message}");
             }
         }
-
         public async Task<ApiResponse<IPaginate<ProductSummaryResponse>>> SearchProductsByNameForCustomerAsync(string? name, int page, int size)
         {
             try

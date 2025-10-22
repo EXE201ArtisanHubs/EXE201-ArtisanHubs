@@ -63,7 +63,9 @@ namespace ArtisanHubs.Bussiness.Mapping
             //.ForMember(dest => dest.ArtistName,
             //           opt => opt.MapFrom(src => src.Artist != null ? src.Artist.ArtistName : null));
             CreateMap<CreateProductRequest, Product>();
-            CreateMap<Product, ProductSummaryResponse>();
+            // Trong AutoMapper Profile
+            CreateMap<Product, ProductSummaryResponse>()
+                .ForMember(dest => dest.FavoriteCount, opt => opt.MapFrom(src => src.FavoriteProducts.Count()));
             CreateMap<UpdateProductRequest, Product>();
             CreateMap<Product, ProductResponse>()
                .ForMember(dest => dest.CategoryName,

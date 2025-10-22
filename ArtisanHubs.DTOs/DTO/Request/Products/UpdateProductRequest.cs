@@ -16,6 +16,7 @@ namespace ArtisanHubs.DTOs.DTO.Request.Products
         public decimal Price { get; set; }
         public decimal? DiscountPrice { get; set; }
         public int StockQuantity { get; set; }
+        public float Weight { get; set; }
         public IFormFile? Images { get; set; }
         public string Status { get; set; } = null!;
     }
