@@ -100,7 +100,7 @@ namespace ArtisanHubs.API.Controllers
         /// </summary>
         [Authorize(Roles = "Customer,Artist,Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] AccountRequest request)
+        public async Task<IActionResult> Update(int id, [FromForm] AccountRequest request)
         {
             var result = await _accountService.UpdateAsync(id, request);
             return StatusCode(result.StatusCode, result);

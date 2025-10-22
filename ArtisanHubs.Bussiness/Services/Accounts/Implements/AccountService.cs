@@ -31,8 +31,9 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         private readonly IPasswordHasher<Account> _passwordHasher;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly PhotoService _photoService;
 
-        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher, IEmailService emailService, IConfiguration configuration)
+        public AccountService(IAccountRepository repo, IMapper mapper, ITokenService tokenService, IPasswordHasher<Account> passwordHasher, IEmailService emailService, IConfiguration configuration, PhotoService photoService)
         {
             _repo = repo;
             _mapper = mapper;
@@ -40,6 +41,7 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             _passwordHasher = passwordHasher;
             _emailService = emailService;
             _configuration = configuration;
+            _photoService = photoService;
         }
 
         public async Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request)
@@ -135,7 +137,7 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
                 // Set default avatar if none provided
                 if (string.IsNullOrEmpty(avatarUrl))
                 {
-                    avatarUrl = "https://res-console.cloudinary.com/artisanhubs2025/thumbnails/v1/image/upload/v1760527061/YmM0Mzk4NzE0MTc2MjE4MzZhMGVlZWE3NjhkNjA5NDRfemRmeW9w/drilldown";
+                    avatarUrl = "https://res.cloudinary.com/artisanhubs2025/image/upload/v1760527061/bc439871417621836a0eeea768d60944_zdfyop.jpg";
                 }
                 entity.Avatar = avatarUrl;
 
@@ -160,6 +162,16 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
 
                 _mapper.Map(request, existing);
                 existing.UpdatedAt = DateTime.UtcNow;
+
+                if (request.AvatarFile != null)
+                {
+                    // Upload the image and get the URL
+                    var imageUrl = await _photoService.UploadImageAsync(request.AvatarFile);
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        existing.Avatar = imageUrl; // Assign the uploaded image URL to the profile
+                    }
+                }
 
                 await _repo.UpdateAsync(existing);
 

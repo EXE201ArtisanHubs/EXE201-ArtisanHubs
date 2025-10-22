@@ -15,10 +15,6 @@ namespace ArtisanHubs.Bussiness.Services.Payment
 {
     public class PayOSService
     {
-        private readonly string _clientId;
-        private readonly string _apiKey;
-        private readonly string _checksumKey;
-        private readonly HttpClient _httpClient;
         private readonly PayOS _payOS;
 
         public PayOSService(IConfiguration configuration)
@@ -27,12 +23,7 @@ namespace ArtisanHubs.Bussiness.Services.Payment
             var apiKey = configuration["PayOS:ApiKey"];
             var checksumKey = configuration["PayOS:ChecksumKey"];
 
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("https://api-merchant.payos.vn/")
-            };
-
-            _payOS = new PayOS(_clientId, _apiKey, _checksumKey);
+            _payOS = new PayOS(clientId, apiKey, checksumKey);
         }
 
         public async Task<CreatePaymentResult> CreatePaymentLinkAsync(
