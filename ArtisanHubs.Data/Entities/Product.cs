@@ -20,7 +20,7 @@ public partial class Product
     public string? Story { get; set; }
 
     [Column("weight")]
-    public float Weight { get; set; }
+    public float? Weight { get; set; }
 
     public decimal Price { get; set; }
 
