@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ArtisanHubs.Data.Migrations
 {
     [DbContext(typeof(ArtisanHubsDbContext))]
-    [Migration("20251023114649_AddOrderCodeToOrder")]
-    partial class AddOrderCodeToOrder
+    [Migration("20251023163812_OrderReturns")]
+    partial class OrderReturns
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -696,6 +696,47 @@ namespace ArtisanHubs.Data.Migrations
                     b.ToTable("Order", (string)null);
                 });
 
+            modelBuilder.Entity("ArtisanHubs.Data.Entities.OrderReturn", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BankAccountName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BankAccountNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("OrderReturns");
+                });
+
             modelBuilder.Entity("ArtisanHubs.Data.Entities.Orderdetail", b =>
                 {
                     b.Property<int>("OrderDetailId")
@@ -859,7 +900,7 @@ namespace ArtisanHubs.Data.Migrations
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<float>("Weight")
+                    b.Property<float?>("Weight")
                         .HasColumnType("real")
                         .HasColumnName("weight");
 
@@ -1270,6 +1311,17 @@ namespace ArtisanHubs.Data.Migrations
                         .HasConstraintName("Order_account_id_fkey");
 
                     b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("ArtisanHubs.Data.Entities.OrderReturn", b =>
+                {
+                    b.HasOne("ArtisanHubs.Data.Entities.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("ArtisanHubs.Data.Entities.Orderdetail", b =>

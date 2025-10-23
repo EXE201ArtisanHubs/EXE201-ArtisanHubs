@@ -661,6 +661,7 @@ public partial class ArtisanHubsDbContext : DbContext
     public virtual DbSet<ForumPost> ForumPosts { get; set; }
     public virtual DbSet<FavoriteProduct> FavoriteProducts { get; set; }
     public virtual DbSet<Achievement> Achievements { get; set; }
+    public virtual DbSet<OrderReturn> OrderReturns { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

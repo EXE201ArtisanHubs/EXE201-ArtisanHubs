@@ -4,7 +4,7 @@ namespace ArtisanHubs.DTOs.DTO.Request.Orders
     {
         public int AccountId { get; set; }
 
-        public int CartId { get; set; }
+        public List<int> CartItemIds { get; set; }
         public AddressDto ShippingAddress { get; set; }
     }
 

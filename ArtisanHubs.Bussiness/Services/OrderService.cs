@@ -53,22 +53,19 @@ namespace ArtisanHubs.Bussiness.Services
             await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                // 1. Lấy cart theo CartId và kiểm tra quyền sở hữu
-                var cart = await _dbContext.Carts
-                    .Include(c => c.CartItems)
-                    .ThenInclude(ci => ci.Product)
-                    .FirstOrDefaultAsync(c => c.Id == request.CartId);
+                var cartItems = await _dbContext.CartItems
+            .Include(ci => ci.Product)
+            .Include(ci => ci.Cart)
+            .Where(ci => request.CartItemIds.Contains(ci.Id) && ci.Cart.AccountId == request.AccountId)
+            .ToListAsync();
 
-                if (cart == null || cart.AccountId != request.AccountId)
-                    return ApiResponse<object>.FailResponse("Cart not found or does not belong to this account.", 404);
-
-                if (cart.CartItems == null || !cart.CartItems.Any())
-                    return ApiResponse<object>.FailResponse("Cart is empty.", 400);
+                if (cartItems == null || !cartItems.Any())
+                    return ApiResponse<object>.FailResponse("No valid cart items found.", 404);
 
                 // 2. Tính tổng giá trị và tổng khối lượng đơn hàng
                 decimal subtotal = 0;
                 int totalWeight = 0;
-                foreach (var item in cart.CartItems)
+                foreach (var item in cartItems)
                 {
                     var product = item.Product;
                     if (product == null)
@@ -112,10 +109,11 @@ namespace ArtisanHubs.Bussiness.Services
                 _dbContext.Orders.Add(order);
                 await _dbContext.SaveChangesAsync();
                 long orderCode = long.Parse($"{order.OrderId}{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}");
+                order.OrderCode = orderCode;
                 await _dbContext.SaveChangesAsync();
 
                 // 5. Thêm OrderDetails
-                foreach (var item in cart.CartItems)
+                foreach (var item in cartItems)
                 {
                     var product = item.Product!;
                     var unitPrice = product.DiscountPrice ?? product.Price;
@@ -183,13 +181,75 @@ namespace ArtisanHubs.Bussiness.Services
             if (order == null) return false;
 
             if (paymentStatus == "PAID")
-                order.Status = "paid";
+                order.Status = "Paid";
+            else if (paymentStatus == "CANCELLED")
+                order.Status = "Cancelled";
             else
                 order.Status = "Payment failed";
 
             order.UpdatedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<IEnumerable<Order>> GetOrdersByUserIdAsync(int userId)
+        {
+            return await _dbContext.Orders
+                .Where(o => o.AccountId == userId)
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<ApiResponse<object>> SubmitOrderReturnAsync(OrderReturnRequest request, int userId)
+        {
+            var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.OrderId == request.OrderId && o.AccountId == userId);
+            if (order == null)
+                return ApiResponse<object>.FailResponse("Order not found or access denied.");
+
+            var orderReturn = new OrderReturn
+            {
+                OrderId = request.OrderId,
+                Reason = request.Reason,
+                BankAccountName = request.BankAccountName,
+                BankAccountNumber = request.BankAccountNumber,
+                BankName = request.BankName,
+                RequestedAt = DateTime.UtcNow,
+                Status = "Pending"
+            };
+            _dbContext.OrderReturns.Add(orderReturn);
+            await _dbContext.SaveChangesAsync();
+
+            return ApiResponse<object>.SuccessResponse("Return request submitted successfully.");
+        }
+
+        public async Task<IEnumerable<OrderReturn>> GetOrderReturnsByUserIdAsync(int userId)
+        {
+            // Lấy các đơn hàng của user
+            var orderIds = await _dbContext.Orders
+                .Where(o => o.AccountId == userId)
+                .Select(o => o.OrderId)
+                .ToListAsync();
+
+            // Lấy các phiếu hoàn trả liên quan đến các đơn hàng đó
+            return await _dbContext.OrderReturns
+                .Where(or => orderIds.Contains(or.OrderId))
+                .OrderByDescending(or => or.RequestedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<OrderReturn>> GetAllOrderReturnsAsync()
+        {
+            return await _dbContext.OrderReturns
+                .OrderByDescending(or => or.RequestedAt)
+                .ToListAsync();
+        }
+
+        public async Task<List<Order>> GetOrdersByAccountIdAsync(int accountId)
+        {
+            return await _dbContext.Orders
+                .Where(o => o.AccountId == accountId)
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
         }
     }
 }
