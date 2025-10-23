@@ -14,5 +14,6 @@ namespace ArtisanHubs.DTOs.DTO.Reponse.Products
         public decimal? DiscountPrice { get; set; }
         public string? Images { get; set; } 
         public double? AverageRating { get; set; }
+        public int FavoriteCount { get; set; }
     }
 }
