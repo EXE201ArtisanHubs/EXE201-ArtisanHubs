@@ -99,7 +99,9 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<OrderPaymentService>();
 builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
 builder.Services.AddHttpClient<GHTKService>();
-builder.Services.AddScoped<OrderDetailService>();
+//builder.Services.AddScoped<OrderDetailService>();
+builder.Services.AddScoped<OrderService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

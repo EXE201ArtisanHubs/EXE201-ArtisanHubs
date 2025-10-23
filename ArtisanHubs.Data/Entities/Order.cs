@@ -11,12 +11,17 @@ public partial class Order
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("order_id")]
     public int OrderId { get; set; }
+    [Column("order_code")]
+    public long OrderCode { get; set; }
 
     public int AccountId { get; set; }
 
     public DateTime? OrderDate { get; set; }
 
     public string? ShippingAddress { get; set; }
+
+    [Column("shipping_fee")]
+    public decimal ShippingFee { get; set; }
 
     public decimal TotalAmount { get; set; }
 
