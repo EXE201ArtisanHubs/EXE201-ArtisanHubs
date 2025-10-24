@@ -16,6 +16,11 @@ namespace ArtisanHubs.Data.Repositories.Products.Interfaces
         Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId);
         Task<bool> ProductExistsByNameAsync(int artistId, string productName);
         Task<Product?> GetProductWithDetailsAsync(int productId);
+        Task<IPaginate<Product>> GetPagedWithDetailsAsync(
+    Expression<Func<Product, bool>>? predicate,
+    int page,
+    int size,
+    string? searchTerm = null);
         Task<IPaginate<Product>> GetPagedAsync(
         Expression<Func<Product, bool>>? predicate,
         int page,

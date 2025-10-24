@@ -115,5 +115,35 @@ namespace ArtisanHubs.Data.Repositories.Products.Implements
             return await query.AsNoTracking()
                              .ToPaginateAsync(page, size);
         }
+
+        public async Task<IPaginate<Product>> GetPagedWithDetailsAsync(
+    Expression<Func<Product, bool>>? predicate,
+    int page,
+    int size,
+    string? searchTerm = null)
+        {
+            IQueryable<Product> query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Artist)
+                .Include(p => p.FavoriteProducts);
+
+            // Nếu có điều kiện predicate thì apply
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                string keyword = searchTerm.ToLower();
+                query = query.Where(a =>
+                    a.Name.ToLower().Contains(keyword)
+                );
+            }
+
+            return await query.AsNoTracking()
+                              .OrderBy(a => a.CategoryId)
+                              .ToPaginateAsync(page, size);
+        }
     }
 }
