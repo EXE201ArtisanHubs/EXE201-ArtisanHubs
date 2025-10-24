@@ -109,25 +109,25 @@ public class AdminService
             if (toPay <= 0) break;
             commission.IsPaid = true;
             toPay -= commission.Amount;
+
+            var wallet = await _context.Artistwallets.FirstOrDefaultAsync(w => w.ArtistId == commission.ArtistId);
+            if (wallet != null)
+            {
+                wallet.PendingBalance -= commission.Amount;
+                wallet.Balance += commission.Amount;
+
+                var walletTransaction = new Wallettransaction
+                {
+                    WalletId = wallet.WalletId,
+                    Amount = commission.Amount,
+                    TransactionType = "commission_paid",
+                    CommissionId = commission.CommissionId,
+                    Status = "Completed",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Wallettransactions.Add(walletTransaction);
+            }
         }
-
-        // Update artist wallet and create wallet transaction
-        var wallet = await _context.Artistwallets.FirstOrDefaultAsync(w => w.ArtistId == withdrawRequest.ArtistId);
-        if (wallet == null) return false;
-
-        decimal balanceBefore = wallet.Balance;
-        wallet.Balance -= withdrawRequest.Amount;
-
-        var walletTransaction = new Wallettransaction
-        {
-            WalletId = wallet.WalletId,
-            Amount = -withdrawRequest.Amount,
-            TransactionType = "Withdrawal",
-            WithdrawId = withdrawRequest.WithdrawId,
-            Status = "Completed",
-            CreatedAt = DateTime.UtcNow,
-        };
-        _context.Wallettransactions.Add(walletTransaction);
 
         await _context.SaveChangesAsync();
         return true;
@@ -135,7 +135,6 @@ public class AdminService
 
     public async Task<bool> CreateCommissionForPaidOrderAsync(int orderId, decimal platformRate)
     {
-        // Lấy thông tin đơn hàng và các chi tiết đơn hàng
         var order = await _context.Orders
             .Include(o => o.Orderdetails)
             .FirstOrDefaultAsync(o => o.OrderId == orderId);
@@ -143,21 +142,17 @@ public class AdminService
         if (order == null || order.Status != "Paid")
             return false;
 
-        // Lấy danh sách các sản phẩm trong đơn hàng
         foreach (var detail in order.Orderdetails)
         {
-            // Lấy thông tin sản phẩm để xác định artist
             var product = await _context.Products
                 .FirstOrDefaultAsync(p => p.ProductId == detail.ProductId);
 
             if (product == null) continue;
 
-            // Tính toán số tiền commission cho từng sản phẩm
             decimal totalAmount = detail.TotalPrice;
             decimal artistShare = totalAmount * (1 - platformRate);
             decimal adminShare = totalAmount * platformRate;
 
-            // Tạo commission cho từng sản phẩm
             var commission = new Commission
             {
                 ProductId = product.ProductId,
@@ -171,28 +166,28 @@ public class AdminService
             };
 
             _context.Commissions.Add(commission);
+            await _context.SaveChangesAsync(); // Để lấy CommissionId
+
             var wallet = await _context.Artistwallets.FirstOrDefaultAsync(w => w.ArtistId == product.ArtistId);
             if (wallet != null)
             {
-                wallet.Balance += artistShare;
+                wallet.PendingBalance += artistShare;
                 wallet.CreatedAt = DateTime.UtcNow;
 
-                // Ghi nhận giao dịch ví
                 var walletTransaction = new Wallettransaction
                 {
                     WalletId = wallet.WalletId,
                     Amount = artistShare,
-                    TransactionType = "commission_income",
+                    TransactionType = "commission_pending",
                     CommissionId = commission.CommissionId,
-                    Status = "Completed",
+                    Status = "Pending",
                     CreatedAt = DateTime.UtcNow
                 };
                 _context.Wallettransactions.Add(walletTransaction);
+                await _context.SaveChangesAsync();
             }
-        
-    }
+        }
 
-        await _context.SaveChangesAsync();
         return true;
     }
 }

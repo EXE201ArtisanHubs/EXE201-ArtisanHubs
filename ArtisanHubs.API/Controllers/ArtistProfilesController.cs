@@ -112,9 +112,12 @@ namespace ArtisanHubs.API.Controllers
         [HttpPost("withdraw-request")]
         public async Task<IActionResult> CreateWithdrawRequest([FromBody] CreateWithdrawRequestModel model)
         {
-            var artistId = GetCurrentAccountId();
+            var accountId = GetCurrentAccountId();
+            var artistId = await _artistProfileService.GetArtistIdByAccountIdAsync(accountId);
+            if (artistId == null)
+                return NotFound("Artist profile not found for this account.");
             var result = await _artistProfileService.CreateWithdrawRequestAsync(
-                artistId, model.Amount, model.BankName, model.AccountHolder, model.AccountNumber
+                (int)artistId, model.Amount, model.BankName, model.AccountHolder, model.AccountNumber
             );
             if (!result)
                 return BadRequest("Insufficient balance or wallet not found.");
@@ -125,8 +128,12 @@ namespace ArtisanHubs.API.Controllers
         [HttpGet("balance")]
         public async Task<IActionResult> GetWalletBalance()
         {
-            var artistId = GetCurrentAccountId();
-            var result = await _artistProfileService.GetWalletBalanceAsync(artistId);
+            var accountId = GetCurrentAccountId();
+            var artistId = await _artistProfileService.GetArtistIdByAccountIdAsync(accountId);
+            if (artistId == null)
+                return NotFound("Artist profile not found for this account.");
+
+            var result = await _artistProfileService.GetWalletBalanceAsync(artistId.Value);
             return StatusCode(result.StatusCode, result);
         }
 
@@ -134,17 +141,24 @@ namespace ArtisanHubs.API.Controllers
         [HttpGet("commissions")]
         public async Task<IActionResult> GetMyCommissions()
         {
-            var artistId = GetCurrentAccountId();
-            var result = await _artistProfileService.GetMyCommissionsAsync(artistId);
+            var accountId = GetCurrentAccountId();
+            var artistId = await _artistProfileService.GetArtistIdByAccountIdAsync(accountId);
+            if (artistId == null)
+                return NotFound("Artist profile not found for this account.");
+
+            var result = await _artistProfileService.GetMyCommissionsAsync(artistId.Value);
             return StatusCode(result.StatusCode, result);
         }
 
-        // 4. Xem lịch sử lệnh rút tiền
         [HttpGet("withdraw-requests")]
         public async Task<IActionResult> GetMyWithdrawRequests()
         {
-            var artistId = GetCurrentAccountId();
-            var result = await _artistProfileService.GetMyWithdrawRequestsAsync(artistId);
+            var accountId = GetCurrentAccountId();
+            var artistId = await _artistProfileService.GetArtistIdByAccountIdAsync(accountId);
+            if (artistId == null)
+                return NotFound("Artist profile not found for this account.");
+
+            var result = await _artistProfileService.GetMyWithdrawRequestsAsync(artistId.Value);
             return StatusCode(result.StatusCode, result);
         }
     }

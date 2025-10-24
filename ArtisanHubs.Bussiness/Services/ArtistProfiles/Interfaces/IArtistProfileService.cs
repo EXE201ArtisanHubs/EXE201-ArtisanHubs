@@ -13,6 +13,7 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces
 {
     public interface IArtistProfileService
     {
+        Task<int?> GetArtistIdByAccountIdAsync(int accountId);
         Task<ApiResponse<ArtistProfileResponse>> GetMyProfileAsync(int accountId);
         Task<ApiResponse<ArtistProfileResponse?>> UpdateMyProfileAsync(int accountId, ArtistProfileRequest request);
         Task<ApiResponse<ArtistProfileResponse>> CreateMyProfileAsync(int accountId, ArtistProfileRequest request);
