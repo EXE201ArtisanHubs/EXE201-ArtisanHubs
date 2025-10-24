@@ -22,14 +22,16 @@ namespace ArtisanHubs.Bussiness.Services
         private readonly PayOSService PayOSService;
         private readonly ICartService _cartService;
         private readonly GHTKService _gHTKService;
+        private readonly AdminService _adminSerivce;
 
-        public OrderService(IOrderRepository orderRepository, ArtisanHubsDbContext dbContext, PayOSService payOSService, ICartService cartService, GHTKService gHTKService)
+        public OrderService(IOrderRepository orderRepository, ArtisanHubsDbContext dbContext, PayOSService payOSService, ICartService cartService, GHTKService gHTKService, AdminService adminSerivce)
         {
             _orderRepository = orderRepository;
             _dbContext = dbContext;
             PayOSService = payOSService;
             _cartService = cartService;
             _gHTKService = gHTKService;
+            _adminSerivce = adminSerivce;
         }
 
         public async Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus)
@@ -181,16 +183,29 @@ namespace ArtisanHubs.Bussiness.Services
             if (order == null) return false;
 
             if (paymentStatus == "PAID")
+            {
                 order.Status = "Paid";
-            else if (paymentStatus == "CANCELLED")
-                order.Status = "Cancelled";
-            else
-                order.Status = "Payment failed";
+                order.UpdatedAt = DateTime.UtcNow;
 
-            order.UpdatedAt = DateTime.UtcNow;
+                // 🔥 Gọi tạo hoa hồng cho đơn hàng đã thanh toán
+                decimal platformRate = 0.10m; // 10% hoa hồng sàn
+                await _adminSerivce.CreateCommissionForPaidOrderAsync(order.OrderId, platformRate);
+            }
+            else if (paymentStatus == "CANCELLED")
+            {
+                order.Status = "Cancelled";
+                order.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                order.Status = "Payment failed";
+                order.UpdatedAt = DateTime.UtcNow;
+            }
+
             await _dbContext.SaveChangesAsync();
             return true;
         }
+
 
         public async Task<IEnumerable<Order>> GetOrdersByUserIdAsync(int userId)
         {

@@ -18,6 +18,9 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces
         Task<ApiResponse<ArtistProfileResponse>> CreateMyProfileAsync(int accountId, ArtistProfileRequest request);
         Task<ApiResponse<IPaginate<Artistprofile>>> GetAllProfilesAsync(int page, int size, string? searchTerm = null);
         Task<ApiResponse<bool>> DeleteProfileAsync(int id);
-        //Task<ApiResponse<IEnumerable<ArtistProfileResponse>>> GetAllArtistsAsync();
+        Task<bool> CreateWithdrawRequestAsync(int artistId, decimal amount, string bankName, string accountHolder, string accountNumber);
+        Task<ApiResponse<decimal>> GetWalletBalanceAsync(int artistId);
+        Task<ApiResponse<List<Commission>>> GetMyCommissionsAsync(int artistId);
+        Task<ApiResponse<List<Withdrawrequest>>> GetMyWithdrawRequestsAsync(int artistId);
     }
 }

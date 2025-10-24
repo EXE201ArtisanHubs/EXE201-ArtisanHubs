@@ -109,5 +109,51 @@ namespace ArtisanHubs.API.Controllers
         //    var result = await _artistProfileService.GetAllArtistsAsync();
         //    return StatusCode(result.StatusCode, result);
         //}
+        [HttpPost("withdraw-request")]
+        public async Task<IActionResult> CreateWithdrawRequest([FromBody] CreateWithdrawRequestModel model)
+        {
+            var artistId = GetCurrentAccountId();
+            var result = await _artistProfileService.CreateWithdrawRequestAsync(
+                artistId, model.Amount, model.BankName, model.AccountHolder, model.AccountNumber
+            );
+            if (!result)
+                return BadRequest("Insufficient balance or wallet not found.");
+            return Ok(new { success = true, message = "Withdraw request created successfully." });
+        }
+
+        // 2. Xem số dư ví
+        [HttpGet("balance")]
+        public async Task<IActionResult> GetWalletBalance()
+        {
+            var artistId = GetCurrentAccountId();
+            var result = await _artistProfileService.GetWalletBalanceAsync(artistId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        // 3. Xem danh sách hoa hồng
+        [HttpGet("commissions")]
+        public async Task<IActionResult> GetMyCommissions()
+        {
+            var artistId = GetCurrentAccountId();
+            var result = await _artistProfileService.GetMyCommissionsAsync(artistId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        // 4. Xem lịch sử lệnh rút tiền
+        [HttpGet("withdraw-requests")]
+        public async Task<IActionResult> GetMyWithdrawRequests()
+        {
+            var artistId = GetCurrentAccountId();
+            var result = await _artistProfileService.GetMyWithdrawRequestsAsync(artistId);
+            return StatusCode(result.StatusCode, result);
+        }
+    }
+
+    public class CreateWithdrawRequestModel
+    {
+        public decimal Amount { get; set; }
+        public string BankName { get; set; }
+        public string AccountHolder { get; set; }
+        public string AccountNumber { get; set; }
     }
 }

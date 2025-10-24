@@ -20,6 +20,7 @@ public partial class Commission
     public decimal Rate { get; set; }
 
     public decimal AdminShare { get; set; }
+    public bool IsPaid { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
