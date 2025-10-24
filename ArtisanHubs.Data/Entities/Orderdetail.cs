@@ -21,9 +21,6 @@ public partial class Orderdetail
 
     public decimal TotalPrice { get; set; }
 
-    [Column("shipping_fee")]
-    public decimal ShippingFee { get; set; }
-
     public virtual Order Order { get; set; } = null!;
 
     public virtual Product Product { get; set; } = null!;

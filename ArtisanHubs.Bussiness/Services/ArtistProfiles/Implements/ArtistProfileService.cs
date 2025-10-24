@@ -33,6 +33,12 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
             _context = context;
         }
 
+        public async Task<int?> GetArtistIdByAccountIdAsync(int accountId)
+        {
+            var profile = await _repo.GetProfileByAccountIdAsync(accountId);
+            return profile?.ArtistId;
+        }
+
         // Lấy profile của nghệ nhân đang đăng nhập
         public async Task<ApiResponse<ArtistProfileResponse?>> GetMyProfileAsync(int accountId)
         {
@@ -241,5 +247,77 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
         //            $"An error occurred: {ex.Message}", 500);
         //    }
         //}
+
+        public async Task<bool> CreateWithdrawRequestAsync(int artistId, decimal amount, string bankName, string accountHolder, string accountNumber)
+        {
+            var wallet = await _context.Artistwallets.FirstOrDefaultAsync(w => w.ArtistId == artistId);
+            if (wallet == null || wallet.Balance < amount)
+                return false;
+
+            var withdrawRequest = new Withdrawrequest
+            {
+                ArtistId = artistId,
+                Amount = amount,
+                BankName = bankName,
+                AccountHolder = accountHolder,
+                AccountNumber = accountNumber,
+                Status = "Pending",
+                RequestedAt = DateTime.UtcNow
+            };
+            _context.Withdrawrequests.Add(withdrawRequest);
+            await _context.SaveChangesAsync(); // Để lấy WithdrawId
+
+            wallet.PendingBalance += amount;
+            wallet.CreatedAt = DateTime.UtcNow;
+
+            var walletTransaction = new Wallettransaction
+            {
+                WalletId = wallet.WalletId,
+                Amount = -amount,
+                TransactionType = "withdraw_request",
+                WithdrawId = withdrawRequest.WithdrawId,
+                Status = "Pending",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Wallettransactions.Add(walletTransaction);
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // Lấy số dư ví của nghệ nhân
+        public async Task<ApiResponse<decimal>> GetWalletBalanceAsync(int artistId)
+        {
+            var wallet = await _context.Artistwallets
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.ArtistId == artistId);
+
+            if (wallet == null)
+                return ApiResponse<decimal>.FailResponse("Wallet not found", 404);
+
+            return ApiResponse<decimal>.SuccessResponse(wallet.Balance, "Get wallet balance successfully");
+        }
+
+        public async Task<ApiResponse<List<Commission>>> GetMyCommissionsAsync(int artistId)
+        {
+            var commissions = await _context.Commissions
+                .AsNoTracking()
+                .Where(c => c.ArtistId == artistId)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+
+            return ApiResponse<List<Commission>>.SuccessResponse(commissions, "Get commissions successfully");
+        }
+
+        public async Task<ApiResponse<List<Withdrawrequest>>> GetMyWithdrawRequestsAsync(int artistId)
+        {
+            var withdraws = await _context.Withdrawrequests
+                .AsNoTracking()
+                .Where(w => w.ArtistId == artistId)
+                .OrderByDescending(w => w.RequestedAt)
+                .ToListAsync();
+
+            return ApiResponse<List<Withdrawrequest>>.SuccessResponse(withdraws, "Get withdraw requests successfully");
+        }
     }
 }
