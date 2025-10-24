@@ -152,38 +152,67 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
             }
         }
 
-        // Cập nhật Account
-        public async Task<ApiResponse<AccountResponse?>> UpdateAsync(int id, AccountRequest request)
+        //// Cập nhật Account
+        //public async Task<ApiResponse<AccountResponse?>> UpdateAsync(int id, AccountRequest request)
+        //{
+        //    try
+        //    {
+        //        var existing = await _repo.GetByIdAsync(id);
+        //        if (existing == null) return ApiResponse<AccountResponse?>.FailResponse("Account not found", 404);
+
+        //        _mapper.Map(request, existing);
+        //        existing.UpdatedAt = DateTime.UtcNow;
+
+        //        if (request.AvatarFile != null)
+        //        {
+        //            // Upload the image and get the URL
+        //            var imageUrl = await _photoService.UploadImageAsync(request.AvatarFile);
+        //            if (!string.IsNullOrEmpty(imageUrl))
+        //            {
+        //                existing.Avatar = imageUrl; // Assign the uploaded image URL to the profile
+        //            }
+        //        }
+
+        //        await _repo.UpdateAsync(existing);
+
+        //        var response = _mapper.Map<AccountResponse>(existing);
+        //        return ApiResponse<AccountResponse?>.SuccessResponse(response, "Update account successfully");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return ApiResponse<AccountResponse?>.FailResponse($"Error: {ex.Message}", 500);
+        //    }
+        //}
+
+        public async Task<ApiResponse<bool>> UpdateAsync(int id, AccountRequest request, string? avatarUrl = null)
         {
             try
             {
-                var existing = await _repo.GetByIdAsync(id);
-                if (existing == null) return ApiResponse<AccountResponse?>.FailResponse("Account not found", 404);
-
-                _mapper.Map(request, existing);
-                existing.UpdatedAt = DateTime.UtcNow;
-
-                if (request.AvatarFile != null)
+                var existingAccount = await _repo.GetByIdAsync(id);
+                if (existingAccount == null)
                 {
-                    // Upload the image and get the URL
-                    var imageUrl = await _photoService.UploadImageAsync(request.AvatarFile);
-                    if (!string.IsNullOrEmpty(imageUrl))
-                    {
-                        existing.Avatar = imageUrl; // Assign the uploaded image URL to the profile
-                    }
+                    return ApiResponse<bool>.FailResponse("Account not found.", 404);
                 }
 
-                await _repo.UpdateAsync(existing);
+                // Map dữ liệu từ request
+                _mapper.Map(request, existingAccount);
 
-                var response = _mapper.Map<AccountResponse>(existing);
-                return ApiResponse<AccountResponse?>.SuccessResponse(response, "Update account successfully");
+                // ✅ THÊM: Cập nhật avatar URL nếu có ảnh mới
+                if (!string.IsNullOrEmpty(avatarUrl))
+                {
+                    existingAccount.Avatar = avatarUrl;
+                }
+
+                existingAccount.UpdatedAt = DateTime.UtcNow;
+
+                await _repo.UpdateAsync(existingAccount);
+                return ApiResponse<bool>.SuccessResponse(true, "Account updated successfully.");
             }
             catch (Exception ex)
             {
-                return ApiResponse<AccountResponse?>.FailResponse($"Error: {ex.Message}", 500);
+                return ApiResponse<bool>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
-
         // Xoá Account
         public async Task<ApiResponse<bool>> DeleteAsync(int id)
         {

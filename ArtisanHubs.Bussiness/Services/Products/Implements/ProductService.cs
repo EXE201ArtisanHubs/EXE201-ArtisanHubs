@@ -213,7 +213,10 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
                 }
 
                 await _productRepo.CreateAsync(productEntity);
-                var response = _mapper.Map<ProductResponse>(productEntity);
+
+                // Reload the product with Category navigation property to get CategoryName
+                var createdProduct = await _productRepo.GetProductWithDetailsAsync(productEntity.ProductId);
+                var response = _mapper.Map<ProductResponse>(createdProduct);
 
                 return ApiResponse<ProductResponse>.SuccessResponse(response, "Product created successfully.", 201);
             }
