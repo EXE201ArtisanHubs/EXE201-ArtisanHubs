@@ -310,6 +310,7 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
                 return ApiResponse<IPaginate<ProductDetailResponse>>.FailResponse($"Error: {ex.Message}");
             }
         }
+
         public async Task<ApiResponse<IPaginate<ProductSummaryResponse>>> SearchProductsByNameForCustomerAsync(string? name, int page, int size)
         {
             try
@@ -467,43 +468,38 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             };
         }
 
-        //public async Task<ApiResponse<IPaginate<ProductSummaryResponse>>> GetAllProductsForCustomerAsync(int page = 1, int size = 10, string? searchTerm = null)
-        //{
-        //    try
-        //    {
-        //        // Tạo predicate để lọc sản phẩm có sẵn và search term nếu có
-        //        Expression<Func<Product, bool>>? predicate = p => p.Status == "Available";
+        public async Task<ApiResponse<ArtistShopResponse>> GetMyProfileWithProductsAsync(int accountId)
+        {
+            try
+            {
+                // 1. Lấy artist profile từ accountId
+                var artistProfile = await _artistProfileRepo.GetProfileByAccountIdAsync(accountId);
 
-        //        if (!string.IsNullOrEmpty(searchTerm))
-        //        {
-        //            predicate = CombinePredicates(predicate, p => p.Name.Contains(searchTerm));
-        //        }
+                if (artistProfile == null)
+                {
+                    return ApiResponse<ArtistShopResponse>.FailResponse("Artist profile not found.", 404);
+                }
 
-        //        // Gọi repository để lấy dữ liệu có phân trang
-        //        var paginatedProducts = await _productRepo.GetPagedAsync(predicate, page, size);
+                // 2. Lấy danh sách sản phẩm của nghệ nhân
+                var products = await _productRepo.GetProductsByArtistIdAsync(artistProfile.ArtistId);
 
-        //        // Map từ IPaginate<Product> sang IPaginate<ProductSummaryResponse>
-        //        var mappedItems = _mapper.Map<IList<ProductSummaryResponse>>(paginatedProducts.Items);
+                // 3. Map dữ liệu sang DTO
+                var profileResponse = _mapper.Map<ArtistProfileResponse>(artistProfile);
+                var productsResponse = _mapper.Map<IEnumerable<ProductSummaryResponse>>(products ?? new List<Product>());
 
-        //        // Tạo IPaginate<ProductSummaryResponse> mới với dữ liệu đã map
-        //        var result = new Paginate<ProductSummaryResponse>
-        //        {
-        //            Items = mappedItems,
-        //            Page = paginatedProducts.Page,
-        //            Size = paginatedProducts.Size,
-        //            Total = paginatedProducts.Total,
-        //            TotalPages = paginatedProducts.TotalPages
-        //        };
+                // 4. Tạo ArtistShopResponse
+                var shopResponse = new ArtistShopResponse
+                {
+                    ArtistProfile = profileResponse,
+                    Products = productsResponse
+                };
 
-        //        return ApiResponse<IPaginate<ProductSummaryResponse>>.SuccessResponse(
-        //            result,
-        //            "Get all products successfully."
-        //        );
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return ApiResponse<IPaginate<ProductSummaryResponse>>.FailResponse($"An error occurred: {ex.Message}", 500);
-        //    }
-        //}
+                return ApiResponse<ArtistShopResponse>.SuccessResponse(shopResponse, "Get my profile successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<ArtistShopResponse>.FailResponse($"An error occurred: {ex.Message}", 500);
+            }
+        }
     }
 }
