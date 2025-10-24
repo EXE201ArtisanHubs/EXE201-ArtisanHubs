@@ -19,7 +19,8 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Interfaces
         Task<ApiResponse<IPaginate<Account>>> GetAllAccountAsync(int page, int size, string? searchTerm = null);
         Task<ApiResponse<AccountResponse?>> GetByIdAsync(int id);
         Task<ApiResponse<AccountResponse>> CreateAsync(AccountRequest request, string? avatarUrl = null);
-        Task<ApiResponse<AccountResponse?>> UpdateAsync(int id, AccountRequest request);
+        //Task<ApiResponse<AccountResponse?>> UpdateAsync(int id, AccountRequest request);
+        Task<ApiResponse<bool>> UpdateAsync(int id, AccountRequest request, string? avatarUrl = null);
         Task<ApiResponse<bool>> DeleteAsync(int id);
         Task<ApiResponse<LoginResponse?>> LoginAsync(LoginRequest request);
         Task<ApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);
