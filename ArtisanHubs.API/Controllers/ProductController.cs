@@ -37,7 +37,7 @@ namespace ArtisanHubs.API.Controllers
         }
 
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllCategories(
+        public async Task<IActionResult> GetAllproduct(
         [FromQuery] int page = 1,
         [FromQuery] int size = 10,
         [FromQuery] string? searchTerm = null)

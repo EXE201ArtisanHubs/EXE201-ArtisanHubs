@@ -285,7 +285,7 @@ namespace ArtisanHubs.Bussiness.Services.Products.Implements
             try
             {
                 // Lấy danh sách products có phân trang
-                var result = await _productRepo.GetPagedAsync(null, page, size, searchTerm);
+                var result = await _productRepo.GetPagedWithDetailsAsync(null, page, size, searchTerm);
 
                 // Map từ IPaginate<Product> sang IPaginate<ProductSummaryResponse>
                 var mappedItems = _mapper.Map<IList<ProductDetailResponse>>(result.Items);
