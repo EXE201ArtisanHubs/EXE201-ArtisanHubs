@@ -1,5 +1,6 @@
 ﻿using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces;
+using ArtisanHubs.Bussiness.Services.Products.Interfaces;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,12 @@ namespace ArtisanHubs.API.Controllers
     public class ArtistProfilesController : ControllerBase
     {
         private readonly IArtistProfileService _artistProfileService;
+        private readonly IProductService _productService;
 
-        public ArtistProfilesController(IArtistProfileService artistProfileService)
+        public ArtistProfilesController(IArtistProfileService artistProfileService,IProductService productService)
         {
             _artistProfileService = artistProfileService;
+            _productService = productService;
         }
        
         private int GetCurrentAccountId()
@@ -40,7 +43,9 @@ namespace ArtisanHubs.API.Controllers
         public async Task<IActionResult> GetMyProfile()
         {
             var accountId = GetCurrentAccountId();
-            var result = await _artistProfileService.GetMyProfileAsync(accountId);
+
+            // ✅ SỬA: Sử dụng ProductService thay vì ArtistProfileService
+            var result = await _productService.GetMyProfileWithProductsAsync(accountId);
 
             return StatusCode(result.StatusCode, result);
         }
