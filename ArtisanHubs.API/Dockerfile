@@ -4,18 +4,22 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy solution and restore as distinct layers
-COPY *.sln ./
-COPY ArtisanHubs.API/*.csproj ./ArtisanHubs.API/
-COPY ArtisanHubs.Bussiness/*.csproj ./ArtisanHubs.Bussiness/
-COPY ArtisanHubs.Data/*.csproj ./ArtisanHubs.Data/
-COPY ArtisanHubs.DTOs/*.csproj ./ArtisanHubs.DTOs/
-RUN dotnet restore
+# Copy solution and project files
+COPY ["ArtisanHubs.sln", "."]
+COPY ["ArtisanHubs.API/ArtisanHubs.API.csproj", "ArtisanHubs.API/"]
+COPY ["ArtisanHubs.Bussiness/ArtisanHubs.Bussiness.csproj", "ArtisanHubs.Bussiness/"]
+COPY ["ArtisanHubs.Data/ArtisanHubs.Data.csproj", "ArtisanHubs.Data/"]
+COPY ["ArtisanHubs.DTOs/ArtisanHubs.DTOs.csproj", "ArtisanHubs.DTOs/"]
 
-# Copy everything else and build
+# Restore NuGet packages
+RUN dotnet restore "ArtisanHubs.sln"
+
+# Copy the remaining source code
 COPY . .
-WORKDIR /src/ArtisanHubs.API
-RUN dotnet publish -c Release -o /app/publish
+
+# Build and publish API project
+WORKDIR "/src/ArtisanHubs.API"
+RUN dotnet publish "ArtisanHubs.API.csproj" -c Release -o /app/publish
 
 # =========================
 #       Runtime stage
@@ -23,6 +27,8 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
+
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+
 ENTRYPOINT ["dotnet", "ArtisanHubs.API.dll"]
