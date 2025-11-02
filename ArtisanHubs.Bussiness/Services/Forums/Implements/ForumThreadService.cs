@@ -18,12 +18,21 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
         private readonly IForumThreadRepository _forumThreadRepo;
         private readonly IForumTopicRepository _topicRepo;
         private readonly IMapper _mapper;
+        private readonly PhotoService _photoService;
+        private readonly IForumNotificationService _notificationService;
 
-        public ForumThreadService(IForumThreadRepository forumThreadRepo, IMapper mapper, IForumTopicRepository forumTopic)
+        public ForumThreadService(
+            IForumThreadRepository forumThreadRepo, 
+            IMapper mapper, 
+            IForumTopicRepository forumTopic,
+            PhotoService photoService,
+            IForumNotificationService notificationService)
         {
             _forumThreadRepo = forumThreadRepo;
             _mapper = mapper;
             _topicRepo = forumTopic;
+            _photoService = photoService;
+            _notificationService = notificationService;
         }
 
         public async Task<ApiResponse<IEnumerable<ForumThreadResponse>>> GetThreadsByTopicAsync(int topicId)
@@ -36,13 +45,12 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
                     return ApiResponse<IEnumerable<ForumThreadResponse>>.FailResponse("Forum topic not found.", 404);
                 }
 
-                var threads = await _forumThreadRepo.GetThreadsByTopicAsync(topicId); // Cần một hàm custom trong repo để lấy cả author
+                var threads = await _forumThreadRepo.GetThreadsByTopicAsync(topicId);
                 var response = _mapper.Map<IEnumerable<ForumThreadResponse>>(threads);
                 return ApiResponse<IEnumerable<ForumThreadResponse>>.SuccessResponse(response);
             }
             catch (Exception ex)
             {
-                // Ghi log lỗi
                 return ApiResponse<IEnumerable<ForumThreadResponse>>.FailResponse($"An unexpected error occurred: {ex.Message}", 500);
             }
         }
@@ -51,7 +59,7 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
         {
             try
             {
-                var thread = await _forumThreadRepo.GetThreadWithDetailsAsync(threadId); // Hàm này lấy cả posts và author
+                var thread = await _forumThreadRepo.GetThreadWithDetailsAsync(threadId);
                 if (thread == null)
                 {
                     return ApiResponse<ForumThreadResponse?>.FailResponse("Thread not found.", 404);
@@ -78,6 +86,16 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
                 var threadEntity = _mapper.Map<ForumThread>(request);
                 threadEntity.AuthorId = authorId;
 
+                // Upload ảnh lên Cloudinary nếu có
+                if (request.ImageFile != null)
+                {
+                    var imageUrl = await _photoService.UploadImageAsync(request.ImageFile);
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        threadEntity.ImageUrl = imageUrl;
+                    }
+                }
+
                 var initialPost = new ForumPost
                 {
                     Content = request.InitialPostContent,
@@ -88,6 +106,10 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
                 await _forumThreadRepo.CreateAsync(threadEntity);
                 var createdThreadWithDetails = await _forumThreadRepo.GetThreadWithDetailsAsync(threadEntity.Id);
                 var response = _mapper.Map<ForumThreadResponse>(createdThreadWithDetails);
+                
+                // 🔥 Gửi real-time notification về thread mới
+                await _notificationService.NotifyNewThread(request.ForumTopicId, response);
+                
                 return ApiResponse<ForumThreadResponse>.SuccessResponse(response, "Thread created successfully.", 201);
             }
             catch (Exception ex)
@@ -112,10 +134,16 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
                     return ApiResponse<ForumThreadResponse?>.FailResponse("You are not authorized to update this thread.", 403);
                 }
 
+                var topicId = existingThread.ForumTopicId;
+                
                 _mapper.Map(request, existingThread);
-               await _forumThreadRepo.UpdateAsync(existingThread);
+                await _forumThreadRepo.UpdateAsync(existingThread);
 
                 var response = _mapper.Map<ForumThreadResponse>(existingThread);
+                
+                // 🔥 Gửi real-time notification về thread đã update
+                await _notificationService.NotifyThreadUpdated(topicId, response);
+                
                 return ApiResponse<ForumThreadResponse?>.SuccessResponse(response, "Thread updated successfully.");
             }
             catch (Exception ex)
@@ -141,8 +169,13 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
                     return ApiResponse<bool>.FailResponse("You are not authorized to delete this thread.", 403);
                 }
 
+                var topicId = threadToDelete.ForumTopicId;
+                
                 await _forumThreadRepo.RemoveAsync(threadToDelete);
 
+                // 🔥 Gửi real-time notification về thread đã xóa
+                await _notificationService.NotifyThreadDeleted(topicId, threadId);
+                
                 return ApiResponse<bool>.SuccessResponse(true, "Thread deleted successfully.");
             }
             catch (Exception ex)

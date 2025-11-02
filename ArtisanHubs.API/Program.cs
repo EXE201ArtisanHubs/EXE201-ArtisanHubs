@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using ArtisanHubs.API.Hubs;
+using ArtisanHubs.API.Services;
 using ArtisanHubs.Bussiness.Mapping;
 using ArtisanHubs.Bussiness.Services;
 using ArtisanHubs.Bussiness.Services.Accounts.Implements;
@@ -87,6 +89,9 @@ builder.Services.AddScoped<IForumPostService, ForumPostService>();
 builder.Services.AddScoped<IFavoriteProductRepository, FavoriteProductRepository>();
 builder.Services.AddScoped<IFavoriteProductService, FavoriteProductService>();
 
+// ?? ??ng ký ForumNotificationService
+builder.Services.AddScoped<IForumNotificationService, ForumNotificationService>();
+
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.AddTransient<IEmailService, SendGridEmailService>();
 
@@ -99,7 +104,6 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<OrderPaymentService>();
 builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
 builder.Services.AddHttpClient<GHTKService>();
-//builder.Services.AddScoped<OrderDetailService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<AdminService>();
 
@@ -109,6 +113,14 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
     });
+
+// ?? Thêm SignalR
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
 
 builder.Services.AddAuthorization();
 
@@ -134,7 +146,7 @@ builder.Services.AddCors(options =>
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
-                .AllowCredentials();
+                .AllowCredentials(); // ?? Quan tr?ng cho SignalR
         });
 });
 
@@ -154,7 +166,24 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = configuration["Jwt:Issuer"],
         ValidAudience = configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(configuration["Jwt:Key"]))
+            Encoding.UTF8.GetBytes(configuration["Jwt:Key"])),
+        NameClaimType = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+    };
+
+    // ?? H? tr? JWT token cho SignalR
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/forum"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -207,5 +236,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ?? Map SignalR Hub
+app.MapHub<ForumHub>("/hubs/forum");
 
 app.Run();
