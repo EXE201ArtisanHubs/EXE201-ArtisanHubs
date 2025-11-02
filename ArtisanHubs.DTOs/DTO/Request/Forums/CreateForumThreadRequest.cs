@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace ArtisanHubs.DTOs.DTO.Request.Forums
 {
@@ -12,9 +13,14 @@ namespace ArtisanHubs.DTOs.DTO.Request.Forums
         [Required]
         [MaxLength(200)]
         public string Title { get; set; }
+        
         [Required]
         public string InitialPostContent { get; set; }
+        
         [Required]
         public int ForumTopicId { get; set; }
+        
+        // Thêm thuộc tính để upload ảnh (không bắt buộc)
+        public IFormFile? ImageFile { get; set; }
     }
 }

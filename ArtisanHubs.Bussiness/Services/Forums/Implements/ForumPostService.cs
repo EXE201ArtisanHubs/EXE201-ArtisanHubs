@@ -19,11 +19,18 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
         private readonly IForumPostRepository _forumPostRepository;
         private readonly IForumThreadRepository _threadRepo;
         private readonly IMapper _mapper;
-        public ForumPostService(IForumPostRepository forumPostRepository, IMapper mapper, IForumThreadRepository threadRepo)
+        private readonly IForumNotificationService _notificationService;
+
+        public ForumPostService(
+            IForumPostRepository forumPostRepository, 
+            IMapper mapper, 
+            IForumThreadRepository threadRepo,
+            IForumNotificationService notificationService)
         {
             _forumPostRepository = forumPostRepository;
             _mapper = mapper;
             _threadRepo = threadRepo;
+            _notificationService = notificationService;
         }
 
         public async Task<ApiResponse<ForumPostResponse>> CreatePostAsync(CreateForumPostRequest request, int authorId)
@@ -43,8 +50,11 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
                 await _forumPostRepository.CreateAsync(postEntity);
 
                 // Lấy lại thông tin post cùng với author để trả về cho client
-                var createdPost = await _forumPostRepository.GetPostWithAuthorAsync(postEntity.Id); // Bạn sẽ cần tạo hàm này
+                var createdPost = await _forumPostRepository.GetPostWithAuthorAsync(postEntity.Id);
                 var response = _mapper.Map<ForumPostResponse>(createdPost);
+
+                // 🔥 Gửi real-time notification về comment mới
+                await _notificationService.NotifyNewPost(request.ForumThreadId, response);
 
                 return ApiResponse<ForumPostResponse>.SuccessResponse(response, "Post created successfully.", 201);
             }
@@ -64,14 +74,17 @@ namespace ArtisanHubs.Bussiness.Services.Forums.Implements
                     return ApiResponse<bool>.FailResponse("Post not found.", 404);
                 }
 
-                // Logic quyền: chỉ tác giả hoặc Admin mới được xóa
-                // (Ở đây ví dụ chỉ tác giả được xóa)
                 if (postDelete.AuthorId != authorId)
                 {
                     return ApiResponse<bool>.FailResponse("You are not authorized to delete this post.", 403);
                 }
 
+                var threadId = postDelete.ForumThreadId;
+                
                 await _forumPostRepository.RemoveAsync(postDelete);
+
+                // 🔥 Gửi real-time notification về comment đã xóa
+                await _notificationService.NotifyPostDeleted(threadId, postId);
 
                 return ApiResponse<bool>.SuccessResponse(true, "Post deleted successfully.");
             }

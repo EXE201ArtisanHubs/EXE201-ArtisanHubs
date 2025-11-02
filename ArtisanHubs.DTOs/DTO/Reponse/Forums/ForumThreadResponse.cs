@@ -11,6 +11,7 @@ namespace ArtisanHubs.DTOs.DTO.Reponse.Forums
         public int Id { get; set; }
         public string Title { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? ImageUrl { get; set; } // Thêm URL ảnh
         public AuthorResponse Author { get; set; }
         public List<ForumPostResponse> Posts { get; set; }
     }

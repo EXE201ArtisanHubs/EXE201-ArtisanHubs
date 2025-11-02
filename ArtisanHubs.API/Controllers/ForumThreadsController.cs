@@ -50,11 +50,11 @@ namespace ArtisanHubs.API.Controllers
         }
 
         /// <summary>
-        /// Tạo một bài đăng mới
+        /// Tạo một bài đăng mới với khả năng upload ảnh
         /// </summary>
         [HttpPost]
         [Authorize] // Yêu cầu phải đăng nhập
-        public async Task<IActionResult> CreateThread([FromBody] CreateForumThreadRequest request)
+        public async Task<IActionResult> CreateThread([FromForm] CreateForumThreadRequest request)
         {
             var authorId = GetCurrentAccountId();
             var result = await _threadService.CreateThreadAsync(request, authorId);

@@ -20,6 +20,9 @@ namespace ArtisanHubs.Data.Entities
         public int ForumTopicId { get; set; }
         public virtual ForumTopic ForumTopic { get; set; } = null!;
 
+        // Thêm thuộc tính để lưu URL ảnh từ cloud
+        public string? ImageUrl { get; set; }
+
         // Navigation property
         public virtual ICollection<ForumPost> Posts { get; set; } = new List<ForumPost>();
     }
