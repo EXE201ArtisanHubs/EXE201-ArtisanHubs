@@ -86,6 +86,7 @@ namespace ArtisanHubs.Bussiness.Mapping
     .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.CartItems));
 
             CreateMap<CartItem, CartItemResponse>()
+                .ForMember(dest => dest.CartItemId, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
                 .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Product.Price))
                 .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.Product.Images));
