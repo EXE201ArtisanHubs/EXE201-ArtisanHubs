@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy solution and project files
-COPY ["ArtisanHubs.sln", "."]
+COPY ["EXE201_ArtisanHubs.sln", "."]
 COPY ["ArtisanHubs.API/ArtisanHubs.API.csproj", "ArtisanHubs.API/"]
 COPY ["ArtisanHubs.Bussiness/ArtisanHubs.Bussiness.csproj", "ArtisanHubs.Bussiness/"]
 COPY ["ArtisanHubs.Data/ArtisanHubs.Data.csproj", "ArtisanHubs.Data/"]
