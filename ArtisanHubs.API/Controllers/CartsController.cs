@@ -54,5 +54,33 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        /// <summary>
+        /// Remove item from cart
+        /// </summary>
+        /// <param name="cartItemId">ID của cart item cần xóa</param>
+        /// <returns>Cart sau khi xóa item</returns>
+        [HttpDelete("{cartItemId}")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> RemoveFromCart(int cartItemId)
+        {
+            var accountId = GetCurrentAccountId();
+            var result = await _cartService.RemoveFromCartAsync(accountId, cartItemId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        /// <summary>
+        /// Remove product from cart by productId
+        /// </summary>
+        /// <param name="productId">ID của product cần xóa khỏi cart</param>
+        /// <returns>Cart sau khi xóa product</returns>
+        [HttpDelete("product/{productId}")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> RemoveProductFromCart(int productId)
+        {
+            var accountId = GetCurrentAccountId();
+            var result = await _cartService.RemoveProductFromCartAsync(accountId, productId);
+            return StatusCode(result.StatusCode, result);
+        }
+
     }
 }

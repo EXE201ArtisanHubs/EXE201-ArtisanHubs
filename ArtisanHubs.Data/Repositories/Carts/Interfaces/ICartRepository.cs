@@ -12,11 +12,16 @@ namespace ArtisanHubs.Data.Repositories.Carts.Interfaces
     {
         Task<Cart?> GetCartByAccountIdAsync(int accountId);
 
-        Task<Cart?> GetCartByIdAsync(int cartId); // Add this line
+        Task<Cart?> GetCartByIdAsync(int cartId);
+
         // Tạo giỏ hàng mới
         Task CreateCartAsync(Cart cart);
 
         // Cập nhật giỏ hàng
         Task UpdateCartAsync(Cart cart);
+
+        // Xóa item khỏi cart
+        Task<CartItem?> GetCartItemByIdAsync(int cartItemId);
+        Task RemoveCartItemAsync(CartItem cartItem);
     }
 }

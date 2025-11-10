@@ -41,5 +41,18 @@ namespace ArtisanHubs.Data.Repositories.Carts.Implements
         {
             await UpdateAsync(cart);
         }
+        
+        public async Task<CartItem?> GetCartItemByIdAsync(int cartItemId)
+        {
+            return await _context.CartItems
+                .Include(ci => ci.Cart)
+                .FirstOrDefaultAsync(ci => ci.Id == cartItemId);
+        }
+
+        public async Task RemoveCartItemAsync(CartItem cartItem)
+        {
+            _context.CartItems.Remove(cartItem);
+            await _context.SaveChangesAsync();
+        }
     }
 }

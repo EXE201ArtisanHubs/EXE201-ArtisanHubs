@@ -139,5 +139,132 @@ namespace ArtisanHubs.Bussiness.Services.Carts.Implements
             }
         }
 
+        public async Task<ApiResponse<CartResponse?>> RemoveFromCartAsync(int accountId, int cartItemId)
+        {
+            try
+            {
+                // Lấy cart item cần xóa
+                var cartItem = await _cartRepository.GetCartItemByIdAsync(cartItemId);
+                
+                if (cartItem == null)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse("Cart item not found.", 404);
+                }
+
+                // Kiểm tra xem cart item có thuộc về user này không
+                var cart = await _cartRepository.GetCartByAccountIdAsync(accountId);
+                if (cart == null || cartItem.CartId != cart.Id)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse("Unauthorized to remove this item.", 403);
+                }
+
+                // Xóa cart item
+                await _cartRepository.RemoveCartItemAsync(cartItem);
+
+                // Cập nhật thời gian update của cart
+                cart.UpdatedAt = DateTime.UtcNow;
+                await _cartRepository.UpdateCartAsync(cart);
+
+                // Lấy lại cart sau khi xóa
+                var updatedCart = await _cartRepository.GetCartByAccountIdAsync(accountId);
+                
+                if (updatedCart == null || !updatedCart.CartItems.Any())
+                {
+                    var emptyCartResponse = new CartResponse
+                    {
+                        CartId = cart.Id,
+                        Items = new List<CartItemResponse>(),
+                        TotalPrice = 0
+                    };
+                    return ApiResponse<CartResponse?>.SuccessResponse(emptyCartResponse, "Item removed successfully. Cart is now empty.");
+                }
+
+                var cartResponse = _mapper.Map<CartResponse>(updatedCart);
+
+                // Tính lại total price
+                cartResponse.TotalPrice = updatedCart.CartItems.Sum(item =>
+                    (item.Product.DiscountPrice ?? item.Product.Price) * item.Quantity
+                );
+
+                foreach (var itemResponse in cartResponse.Items)
+                {
+                    var productInCart = updatedCart.CartItems
+                                            .First(ci => ci.ProductId == itemResponse.ProductId)
+                                            .Product;
+                    itemResponse.Price = productInCart.DiscountPrice ?? productInCart.Price;
+                }
+
+                return ApiResponse<CartResponse?>.SuccessResponse(cartResponse, "Item removed from cart successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CartResponse?>.FailResponse($"Error removing item from cart: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<ApiResponse<CartResponse?>> RemoveProductFromCartAsync(int accountId, int productId)
+        {
+            try
+            {
+                // Lấy cart của user
+                var cart = await _cartRepository.GetCartByAccountIdAsync(accountId);
+                
+                if (cart == null)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse("Cart not found.", 404);
+                }
+
+                // Tìm cart item chứa product này
+                var cartItem = cart.CartItems.FirstOrDefault(ci => ci.ProductId == productId);
+                
+                if (cartItem == null)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse("Product not found in cart.", 404);
+                }
+
+                // Xóa cart item
+                await _cartRepository.RemoveCartItemAsync(cartItem);
+
+                // Cập nhật thời gian update của cart
+                cart.UpdatedAt = DateTime.UtcNow;
+                await _cartRepository.UpdateCartAsync(cart);
+
+                // Lấy lại cart sau khi xóa
+                var updatedCart = await _cartRepository.GetCartByAccountIdAsync(accountId);
+                
+                if (updatedCart == null || !updatedCart.CartItems.Any())
+                {
+                    var emptyCartResponse = new CartResponse
+                    {
+                        CartId = cart.Id,
+                        Items = new List<CartItemResponse>(),
+                        TotalPrice = 0
+                    };
+                    return ApiResponse<CartResponse?>.SuccessResponse(emptyCartResponse, "Product removed successfully. Cart is now empty.");
+                }
+
+                var cartResponse = _mapper.Map<CartResponse>(updatedCart);
+
+                // Tính lại total price
+                cartResponse.TotalPrice = updatedCart.CartItems.Sum(item =>
+                    (item.Product.DiscountPrice ?? item.Product.Price) * item.Quantity
+                );
+
+                foreach (var itemResponse in cartResponse.Items)
+                {
+                    var productInCart = updatedCart.CartItems
+                                            .First(ci => ci.ProductId == itemResponse.ProductId)
+                                            .Product;
+                    itemResponse.Price = productInCart.DiscountPrice ?? productInCart.Price;
+                }
+
+                return ApiResponse<CartResponse?>.SuccessResponse(cartResponse, "Product removed from cart successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CartResponse?>.FailResponse($"Error removing product from cart: {ex.Message}", 500);
+            }
+        }
+
     }
 }
