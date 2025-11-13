@@ -266,5 +266,75 @@ namespace ArtisanHubs.Bussiness.Services.Carts.Implements
             }
         }
 
+        public async Task<ApiResponse<CartResponse?>> UpdateCartItemQuantityAsync(int accountId, int cartItemId, int quantity)
+        {
+            try
+            {
+                // Validate quantity
+                if (quantity < 1 || quantity > 100)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse("Quantity must be between 1 and 100.", 400);
+                }
+
+                // Lấy cart item cần update
+                var cartItem = await _cartRepository.GetCartItemByIdAsync(cartItemId);
+                
+                if (cartItem == null)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse("Cart item not found.", 404);
+                }
+
+                // Kiểm tra quyền sở hữu
+                var cart = await _cartRepository.GetCartByAccountIdAsync(accountId);
+                if (cart == null || cartItem.CartId != cart.Id)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse("Unauthorized to update this item.", 403);
+                }
+
+                // Kiểm tra stock availability
+                var product = await _productRepository.GetByIdAsync(cartItem.ProductId);
+                if (product == null)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse("Product not found.", 404);
+                }
+
+                if (product.StockQuantity < quantity)
+                {
+                    return ApiResponse<CartResponse?>.FailResponse(
+                        $"Not enough stock. Only {product.StockQuantity} items available.", 400);
+                }
+
+                // Cập nhật quantity
+                cartItem.Quantity = quantity;
+                
+                // Cập nhật cart timestamp
+                cart.UpdatedAt = DateTime.UtcNow;
+                await _cartRepository.UpdateCartAsync(cart);
+
+                // Lấy lại cart sau khi update
+                var updatedCart = await _cartRepository.GetCartByAccountIdAsync(accountId);
+                var cartResponse = _mapper.Map<CartResponse>(updatedCart);
+
+                // Tính lại total price
+                cartResponse.TotalPrice = updatedCart.CartItems.Sum(item =>
+                    (item.Product.DiscountPrice ?? item.Product.Price) * item.Quantity
+                );
+
+                foreach (var itemResponse in cartResponse.Items)
+                {
+                    var productInCart = updatedCart.CartItems
+                                            .First(ci => ci.ProductId == itemResponse.ProductId)
+                                            .Product;
+                    itemResponse.Price = productInCart.DiscountPrice ?? productInCart.Price;
+                }
+
+                return ApiResponse<CartResponse?>.SuccessResponse(cartResponse, "Cart item quantity updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CartResponse?>.FailResponse($"Error updating cart item quantity: {ex.Message}", 500);
+            }
+        }
+
     }
 }
