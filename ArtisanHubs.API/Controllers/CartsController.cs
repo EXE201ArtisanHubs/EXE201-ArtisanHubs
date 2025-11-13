@@ -82,5 +82,20 @@ namespace ArtisanHubs.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        /// <summary>
+        /// Update quantity of a cart item
+        /// </summary>
+        /// <param name="cartItemId">ID của cart item cần update</param>
+        /// <param name="request">Request chứa quantity mới</param>
+        /// <returns>Cart sau khi update quantity và tính lại total price</returns>
+        [HttpPut("{cartItemId}/quantity")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> UpdateCartItemQuantity(int cartItemId, [FromBody] UpdateCartItemQuantityRequest request)
+        {
+            var accountId = GetCurrentAccountId();
+            var result = await _cartService.UpdateCartItemQuantityAsync(accountId, cartItemId, request.Quantity);
+            return StatusCode(result.StatusCode, result);
+        }
+
     }
 }

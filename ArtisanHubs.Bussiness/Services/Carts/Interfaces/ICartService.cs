@@ -17,5 +17,6 @@ namespace ArtisanHubs.Bussiness.Services.Carts.Interfaces
         Task<ApiResponse<CartResponse>> GetCartByAccountIdAsync(int accountId);
         Task<ApiResponse<CartResponse>> RemoveFromCartAsync(int accountId, int cartItemId);
         Task<ApiResponse<CartResponse>> RemoveProductFromCartAsync(int accountId, int productId);
+        Task<ApiResponse<CartResponse>> UpdateCartItemQuantityAsync(int accountId, int cartItemId, int quantity);
     }
 }
