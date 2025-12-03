@@ -7,8 +7,11 @@ using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Bussiness.Services.Carts.Interfaces;
 using ArtisanHubs.Bussiness.Services.Payment;
 using ArtisanHubs.Data.Entities;
+using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.Data.Repositories.Orders.Interfaces;
+using ArtisanHubs.DTOs.DTO.Reponse.Order;
 using ArtisanHubs.DTOs.DTO.Request.Orders;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using SendGrid.Helpers.Mail;
@@ -23,8 +26,9 @@ namespace ArtisanHubs.Bussiness.Services
         private readonly ICartService _cartService;
         private readonly GHTKService _gHTKService;
         private readonly AdminService _adminSerivce;
+        private readonly IMapper _mapper;
 
-        public OrderService(IOrderRepository orderRepository, ArtisanHubsDbContext dbContext, PayOSService payOSService, ICartService cartService, GHTKService gHTKService, AdminService adminSerivce)
+        public OrderService(IOrderRepository orderRepository, ArtisanHubsDbContext dbContext, PayOSService payOSService, ICartService cartService, GHTKService gHTKService, AdminService adminSerivce, IMapper mapper)
         {
             _orderRepository = orderRepository;
             _dbContext = dbContext;
@@ -32,6 +36,7 @@ namespace ArtisanHubs.Bussiness.Services
             _cartService = cartService;
             _gHTKService = gHTKService;
             _adminSerivce = adminSerivce;
+            _mapper = mapper;
         }
 
         public async Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus)
@@ -265,6 +270,67 @@ namespace ArtisanHubs.Bussiness.Services
                 .Where(o => o.AccountId == accountId)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<ApiResponse<IPaginate<OrderResponse>>> GetAllOrdersAsync(int page = 1, int size = 10, string searchTerm = null, string status = null)
+        {
+            try
+            {
+                IQueryable<Order> query = _dbContext.Orders
+                    .Include(o => o.Orderdetails)
+                    .Include(o => o.Account)
+                    .AsNoTracking();
+
+                // Search by order code, username, or shipping address
+                if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    string keyword = searchTerm.ToLower();
+                    query = query.Where(o => 
+                        o.OrderCode.ToString().Contains(keyword) ||
+                        (o.Account != null && o.Account.Username.ToLower().Contains(keyword)) ||
+                        (o.ShippingAddress != null && o.ShippingAddress.ToLower().Contains(keyword))
+                    );
+                }
+
+                // Filter by status
+                if (!string.IsNullOrEmpty(status))
+                {
+                    query = query.Where(o => o.Status.ToLower() == status.ToLower());
+                }
+
+                // Get total count
+                var total = await query.CountAsync();
+
+                // Apply pagination
+                var orders = await query
+                    .OrderByDescending(o => o.CreatedAt)
+                    .Skip((page - 1) * size)
+                    .Take(size)
+                    .ToListAsync();
+
+                // Map to response DTO
+                var orderResponses = _mapper.Map<List<OrderResponse>>(orders);
+
+                var totalPages = (int)Math.Ceiling(total / (double)size);
+
+                var paginatedResult = new Paginate<OrderResponse>
+                {
+                    Items = orderResponses,
+                    Page = page,
+                    Size = size,
+                    Total = total,
+                    TotalPages = totalPages
+                };
+
+                return ApiResponse<IPaginate<OrderResponse>>.SuccessResponse(
+                    paginatedResult,
+                    "Get paginated orders successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<IPaginate<OrderResponse>>.FailResponse($"Error: {ex.Message}");
+            }
         }
     }
 }
