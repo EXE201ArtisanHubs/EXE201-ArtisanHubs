@@ -81,5 +81,17 @@ namespace ArtisanHubs.API.Controllers
             var orderIds = await _orderService.GetOrdersByAccountIdAsync(int.Parse(accountIdString));
             return Ok(orderIds);
         }
+
+        [HttpGet("all")]
+        //[Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllOrders(
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 10,
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] string? status = null)
+        {
+            var result = await _orderService.GetAllOrdersAsync(page, size, searchTerm, status);
+            return Ok(result);
+        }
     }
 }

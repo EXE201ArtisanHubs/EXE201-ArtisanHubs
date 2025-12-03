@@ -3,6 +3,7 @@ using ArtisanHubs.DTOs.DTO.Reponse.ArtistProfile;
 using ArtisanHubs.DTOs.DTO.Reponse.Carts;
 using ArtisanHubs.DTOs.DTO.Reponse.Categories;
 using ArtisanHubs.DTOs.DTO.Reponse.Forums;
+using ArtisanHubs.DTOs.DTO.Reponse.Order;
 using ArtisanHubs.DTOs.DTO.Reponse.Products;
 using ArtisanHubs.DTOs.DTO.Reponse.WorkshopPackages;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
@@ -103,6 +104,10 @@ namespace ArtisanHubs.Bussiness.Mapping
            .ForMember(dest => dest.Posts, opt => opt.MapFrom(src => src.Posts));
             CreateMap<ForumTopic, ForumTopicResponse>();
             CreateMap<CreateForumPostRequest, ForumPost>();
+
+            CreateMap<Order, OrderResponse>()
+                .ForMember(dest => dest.AccountUsername, opt => opt.MapFrom(src => src.Account != null ? src.Account.Username : null))
+                .ForMember(dest => dest.TotalItems, opt => opt.MapFrom(src => src.Orderdetails.Sum(od => od.Quantity)));
         }
     }
 }   
