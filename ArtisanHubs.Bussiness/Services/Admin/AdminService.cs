@@ -7,6 +7,7 @@ using ArtisanHubs.Data.Entities;
 using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.DTOs.DTO.Reponse.Transaction;
+using ArtisanHubs.DTOs.DTO.Reponse.Admin;
 
 public class AdminService
 {
@@ -346,6 +347,175 @@ public class AdminService
         catch (Exception ex)
         {
             return ApiResponse<TransactionResponse>.FailResponse($"Error: {ex.Message}");
+        }
+    }
+
+    // Get order detail with commission breakdown for Admin
+    public async Task<ApiResponse<AdminOrderDetailResponse>> GetOrderDetailWithCommissionAsync(int orderId)
+    {
+        try
+        {
+            var order = await _context.Orders
+                .Include(o => o.Account)
+                .Include(o => o.Orderdetails)
+                    .ThenInclude(od => od.Product)
+                        .ThenInclude(p => p.Artist)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null)
+            {
+                return ApiResponse<AdminOrderDetailResponse>.FailResponse("Order not found", 404);
+            }
+
+            // Get all commissions for this order
+            var commissions = await _context.Commissions
+                .Where(c => c.OrderId == orderId)
+                .ToListAsync();
+
+            var orderItems = new List<AdminOrderItemResponse>();
+            decimal subTotal = 0;
+            int totalItems = 0;
+            decimal totalPlatformCommission = 0;
+            decimal totalArtistEarnings = 0;
+
+            foreach (var detail in order.Orderdetails)
+            {
+                var commission = commissions.FirstOrDefault(c => c.OrderDetailId == detail.OrderDetailId);
+
+                var itemResponse = new AdminOrderItemResponse
+                {
+                    OrderDetailId = detail.OrderDetailId,
+                    ProductId = detail.ProductId,
+                    ProductName = detail.Product?.Name ?? "Unknown",
+                    ProductImage = detail.Product?.Images,
+                    Quantity = detail.Quantity,
+                    UnitPrice = detail.UnitPrice,
+                    TotalPrice = detail.TotalPrice,
+                    ArtistId = detail.Product?.ArtistId ?? 0,
+                    ArtistName = detail.Product?.Artist?.ArtistName ?? "Unknown",
+                    CommissionId = commission?.CommissionId,
+                    CommissionAmount = commission?.Amount ?? 0,
+                    CommissionRate = commission?.CommissionRate ?? 0,
+                    PlatformCommission = commission?.AdminShare ?? 0,
+                    ArtistEarning = commission?.Amount ?? 0,
+                    IsPaid = commission?.IsPaid ?? false,
+                    PaidAt = commission?.PaidAt
+                };
+
+                orderItems.Add(itemResponse);
+                subTotal += detail.TotalPrice;
+                totalItems += detail.Quantity;
+                totalPlatformCommission += commission?.AdminShare ?? 0;
+                totalArtistEarnings += commission?.Amount ?? 0;
+            }
+
+            var orderResponse = new AdminOrderDetailResponse
+            {
+                OrderId = order.OrderId,
+                OrderCode = order.OrderCode,
+                OrderDate = order.OrderDate,
+                Status = order.Status,
+                PaymentMethod = order.PaymentMethod ?? "Unknown",
+                ShippingFee = order.ShippingFee,
+                TotalAmount = order.TotalAmount,
+                ShippingAddress = order.ShippingAddress ?? "",
+                CustomerId = order.AccountId,
+                CustomerName = order.Account?.Username ?? "Unknown",
+                CustomerEmail = order.Account?.Email ?? "Unknown",
+                CustomerPhone = order.Account?.Phone,
+                OrderItems = orderItems,
+                TotalItems = totalItems,
+                SubTotal = subTotal,
+                TotalPlatformCommission = totalPlatformCommission,
+                TotalArtistEarnings = totalArtistEarnings,
+                CreatedAt = order.CreatedAt,
+                UpdatedAt = order.UpdatedAt
+            };
+
+            return ApiResponse<AdminOrderDetailResponse>.SuccessResponse(
+                orderResponse,
+                "Get order detail successfully"
+            );
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<AdminOrderDetailResponse>.FailResponse($"Error: {ex.Message}");
+        }
+    }
+
+    // Get order statistics with total platform commissions
+    public async Task<ApiResponse<OrderStatisticsResponse>> GetOrderStatisticsAsync(DateTime? fromDate = null, DateTime? toDate = null)
+    {
+        try
+        {
+            var query = _context.Orders.AsQueryable();
+
+            // Apply date filters if provided
+            if (fromDate.HasValue)
+            {
+                query = query.Where(o => o.OrderDate >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(o => o.OrderDate <= toDate.Value);
+            }
+
+            var orders = await query.ToListAsync();
+
+            // Count orders by status
+            var totalOrders = orders.Count;
+            var pendingOrders = orders.Count(o => o.Status == "Pending");
+            var paidOrders = orders.Count(o => o.Status == "Paid");
+            var processingOrders = orders.Count(o => o.Status == "Processing");
+            var shippingOrders = orders.Count(o => o.Status == "Shipping");
+            var deliveredOrders = orders.Count(o => o.Status == "Delivered");
+            var cancelledOrders = orders.Count(o => o.Status == "Cancelled");
+
+            // Calculate revenue
+            var totalRevenue = orders.Where(o => o.Status != "Cancelled").Sum(o => o.TotalAmount);
+            var totalShippingFees = orders.Where(o => o.Status != "Cancelled").Sum(o => o.ShippingFee);
+
+            // Get commissions for orders in the date range
+            var orderIds = orders.Select(o => o.OrderId).ToList();
+            var commissions = await _context.Commissions
+                .Where(c => orderIds.Contains(c.OrderId))
+                .ToListAsync();
+
+            var totalPlatformCommission = commissions.Sum(c => c.AdminShare);
+            var totalArtistEarnings = commissions.Sum(c => c.Amount);
+            var paidCommissions = commissions.Where(c => c.IsPaid).Sum(c => c.AdminShare);
+            var unpaidCommissions = commissions.Where(c => !c.IsPaid).Sum(c => c.AdminShare);
+
+            var statistics = new OrderStatisticsResponse
+            {
+                TotalOrders = totalOrders,
+                PendingOrders = pendingOrders,
+                PaidOrders = paidOrders,
+                ProcessingOrders = processingOrders,
+                ShippingOrders = shippingOrders,
+                DeliveredOrders = deliveredOrders,
+                CancelledOrders = cancelledOrders,
+                TotalRevenue = totalRevenue,
+                TotalPlatformCommission = totalPlatformCommission,
+                TotalArtistEarnings = totalArtistEarnings,
+                TotalShippingFees = totalShippingFees,
+                PaidCommissions = paidCommissions,
+                UnpaidCommissions = unpaidCommissions,
+                TotalCommissionRecords = commissions.Count,
+                FromDate = fromDate,
+                ToDate = toDate
+            };
+
+            return ApiResponse<OrderStatisticsResponse>.SuccessResponse(
+                statistics,
+                "Get order statistics successfully"
+            );
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<OrderStatisticsResponse>.FailResponse($"Error: {ex.Message}");
         }
     }
 }

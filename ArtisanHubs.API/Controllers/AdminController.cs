@@ -74,4 +74,24 @@ public class AdminController : ControllerBase
         var result = await _adminService.GetTransactionByIdAsync(transactionId);
         return StatusCode(result.StatusCode, result);
     }
+
+    // Get order detail with commission breakdown
+    [HttpGet("orders/{orderId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetOrderDetail(int orderId)
+    {
+        var result = await _adminService.GetOrderDetailWithCommissionAsync(orderId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    // Get order statistics with total platform commissions
+    [HttpGet("orders/statistics")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetOrderStatistics(
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null)
+    {
+        var result = await _adminService.GetOrderStatisticsAsync(fromDate, toDate);
+        return StatusCode(result.StatusCode, result);
+    }
 }
