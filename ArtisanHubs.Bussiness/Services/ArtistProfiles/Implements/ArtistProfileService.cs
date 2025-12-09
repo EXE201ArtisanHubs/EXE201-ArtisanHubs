@@ -10,6 +10,7 @@ using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.Data.Repositories.Accounts.Interfaces;
 using ArtisanHubs.Data.Repositories.ArtistProfiles.Interfaces;
 using ArtisanHubs.DTOs.DTO.Reponse.ArtistProfile;
+using ArtisanHubs.DTOs.DTO.Reponse.Order;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -318,6 +319,246 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
                 .ToListAsync();
 
             return ApiResponse<List<Withdrawrequest>>.SuccessResponse(withdraws, "Get withdraw requests successfully");
+        }
+
+        public async Task<ApiResponse<IPaginate<ArtistOrderResponse>>> GetMyOrdersAsync(
+            int artistId, 
+            int page = 1, 
+            int size = 10, 
+            string searchTerm = null, 
+            string status = null)
+        {
+            try
+            {
+                // Lấy tất cả OrderDetail của các sản phẩm thuộc Artist này
+                IQueryable<Orderdetail> query = _context.Orderdetails
+                    .Include(od => od.Order)
+                        .ThenInclude(o => o.Account)
+                    .Include(od => od.Product)
+                    .Where(od => od.Product.ArtistId == artistId)
+                    .AsNoTracking();
+
+                // Filter by order status
+                if (!string.IsNullOrEmpty(status))
+                {
+                    query = query.Where(od => od.Order.Status.ToLower() == status.ToLower());
+                }
+
+                // Search by customer name or order code
+                if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    string keyword = searchTerm.ToLower();
+                    query = query.Where(od =>
+                        od.Order.OrderCode.ToString().Contains(keyword) ||
+                        od.Order.Account.Username.ToLower().Contains(keyword)
+                    );
+                }
+
+                // Group by OrderId để lấy danh sách các OrderId unique
+                var orderIds = await query
+                    .Select(od => od.OrderId)
+                    .Distinct()
+                    .OrderByDescending(id => id)
+                    .Skip((page - 1) * size)
+                    .Take(size)
+                    .ToListAsync();
+
+                var total = await query.Select(od => od.OrderId).Distinct().CountAsync();
+
+                // Lấy thông tin chi tiết của các orders
+                var orders = await _context.Orders
+                    .Include(o => o.Account)
+                    .Include(o => o.Orderdetails)
+                        .ThenInclude(od => od.Product)
+                    .Where(o => orderIds.Contains(o.OrderId))
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+                // Lấy commissions cho các orders này
+                var commissions = await _context.Commissions
+                    .Where(c => orderIds.Contains(c.OrderId) && c.ArtistId == artistId)
+                    .ToListAsync();
+
+                // Map sang response DTO
+                var orderResponses = new List<ArtistOrderResponse>();
+
+                foreach (var order in orders)
+                {
+                    // Chỉ lấy những items thuộc về artist này
+                    var artistOrderDetails = order.Orderdetails
+                        .Where(od => od.Product.ArtistId == artistId)
+                        .ToList();
+
+                    var orderItems = new List<ArtistOrderItemResponse>();
+                    decimal totalCommission = 0;
+                    decimal platformFee = 0;
+
+                    foreach (var detail in artistOrderDetails)
+                    {
+                        // Tìm commission tương ứng
+                        var commission = commissions.FirstOrDefault(c => 
+                            c.OrderId == order.OrderId && 
+                            c.ProductId == detail.ProductId);
+
+                        var itemResponse = new ArtistOrderItemResponse
+                        {
+                            OrderDetailId = detail.OrderDetailId,
+                            ProductId = detail.ProductId,
+                            ProductName = detail.Product?.Name ?? "Unknown",
+                            ProductImage = detail.Product?.Images,
+                            Quantity = detail.Quantity,
+                            UnitPrice = detail.UnitPrice,
+                            TotalPrice = detail.TotalPrice,
+                            CommissionAmount = commission?.Amount ?? 0,
+                            CommissionRate = commission?.Rate ?? 0,
+                            PlatformShare = commission?.AdminShare ?? 0,
+                            IsPaid = commission?.IsPaid ?? false
+                        };
+
+                        orderItems.Add(itemResponse);
+                        totalCommission += itemResponse.CommissionAmount;
+                        platformFee += itemResponse.PlatformShare;
+                    }
+
+                    var orderResponse = new ArtistOrderResponse
+                    {
+                        OrderId = order.OrderId,
+                        OrderCode = order.OrderCode,
+                        OrderDate = order.OrderDate,
+                        Status = order.Status,
+                        PaymentMethod = order.PaymentMethod ?? "Unknown",
+                        ShippingFee = order.ShippingFee,
+                        TotalAmount = order.TotalAmount,
+                        ShippingAddress = order.ShippingAddress ?? "",
+                        CreatedAt = order.CreatedAt,
+                        CustomerId = order.AccountId,
+                        CustomerName = order.Account?.Username ?? "Unknown",
+                        CustomerEmail = order.Account?.Email ?? "",
+                        CustomerPhone = order.Account?.Phone ?? "",
+                        OrderItems = orderItems,
+                        TotalCommission = totalCommission,
+                        PlatformFee = platformFee,
+                        ArtistEarnings = totalCommission
+                    };
+
+                    orderResponses.Add(orderResponse);
+                }
+
+                var totalPages = (int)Math.Ceiling(total / (double)size);
+
+                var paginatedResult = new Paginate<ArtistOrderResponse>
+                {
+                    Items = orderResponses,
+                    Page = page,
+                    Size = size,
+                    Total = total,
+                    TotalPages = totalPages
+                };
+
+                return ApiResponse<IPaginate<ArtistOrderResponse>>.SuccessResponse(
+                    paginatedResult,
+                    "Get artist orders successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<IPaginate<ArtistOrderResponse>>.FailResponse($"Error: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<ArtistOrderResponse>> GetOrderDetailAsync(int artistId, int orderId)
+        {
+            try
+            {
+                var order = await _context.Orders
+                    .Include(o => o.Account)
+                    .Include(o => o.Orderdetails)
+                        .ThenInclude(od => od.Product)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+                if (order == null)
+                {
+                    return ApiResponse<ArtistOrderResponse>.FailResponse("Order not found", 404);
+                }
+
+                // Kiểm tra xem order có sản phẩm của artist này không
+                var hasArtistProduct = order.Orderdetails.Any(od => od.Product.ArtistId == artistId);
+                if (!hasArtistProduct)
+                {
+                    return ApiResponse<ArtistOrderResponse>.FailResponse("You don't have any products in this order", 403);
+                }
+
+                // Lấy commissions
+                var commissions = await _context.Commissions
+                    .Where(c => c.OrderId == orderId && c.ArtistId == artistId)
+                    .ToListAsync();
+
+                // Chỉ lấy những items thuộc về artist này
+                var artistOrderDetails = order.Orderdetails
+                    .Where(od => od.Product.ArtistId == artistId)
+                    .ToList();
+
+                var orderItems = new List<ArtistOrderItemResponse>();
+                decimal totalCommission = 0;
+                decimal platformFee = 0;
+
+                foreach (var detail in artistOrderDetails)
+                {
+                    var commission = commissions.FirstOrDefault(c => 
+                        c.OrderId == order.OrderId && 
+                        c.ProductId == detail.ProductId);
+
+                    var itemResponse = new ArtistOrderItemResponse
+                    {
+                        OrderDetailId = detail.OrderDetailId,
+                        ProductId = detail.ProductId,
+                        ProductName = detail.Product?.Name ?? "Unknown",
+                        ProductImage = detail.Product?.Images,
+                        Quantity = detail.Quantity,
+                        UnitPrice = detail.UnitPrice,
+                        TotalPrice = detail.TotalPrice,
+                        CommissionAmount = commission?.Amount ?? 0,
+                        CommissionRate = commission?.Rate ?? 0,
+                        PlatformShare = commission?.AdminShare ?? 0,
+                        IsPaid = commission?.IsPaid ?? false
+                    };
+
+                    orderItems.Add(itemResponse);
+                    totalCommission += itemResponse.CommissionAmount;
+                    platformFee += itemResponse.PlatformShare;
+                }
+
+                var orderResponse = new ArtistOrderResponse
+                {
+                    OrderId = order.OrderId,
+                    OrderCode = order.OrderCode,
+                    OrderDate = order.OrderDate,
+                    Status = order.Status,
+                    PaymentMethod = order.PaymentMethod ?? "Unknown",
+                    ShippingFee = order.ShippingFee,
+                    TotalAmount = order.TotalAmount,
+                    ShippingAddress = order.ShippingAddress ?? "",
+                    CreatedAt = order.CreatedAt,
+                    CustomerId = order.AccountId,
+                    CustomerName = order.Account?.Username ?? "Unknown",
+                    CustomerEmail = order.Account?.Email ?? "",
+                    CustomerPhone = order.Account?.Phone ?? "",
+                    OrderItems = orderItems,
+                    TotalCommission = totalCommission,
+                    PlatformFee = platformFee,
+                    ArtistEarnings = totalCommission
+                };
+
+                return ApiResponse<ArtistOrderResponse>.SuccessResponse(
+                    orderResponse,
+                    "Get order detail successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<ArtistOrderResponse>.FailResponse($"Error: {ex.Message}");
+            }
         }
     }
 }

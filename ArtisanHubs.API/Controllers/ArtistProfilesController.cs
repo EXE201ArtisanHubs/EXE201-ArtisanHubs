@@ -166,6 +166,38 @@ namespace ArtisanHubs.API.Controllers
             var result = await _artistProfileService.GetMyWithdrawRequestsAsync(artistId.Value);
             return StatusCode(result.StatusCode, result);
         }
+
+        // Xem danh sách đơn hàng đã bán
+        [HttpGet("my-orders")]
+        [Authorize(Roles = "Artist")]
+        public async Task<IActionResult> GetMyOrders(
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 10,
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] string? status = null)
+        {
+            var accountId = GetCurrentAccountId();
+            var artistId = await _artistProfileService.GetArtistIdByAccountIdAsync(accountId);
+            if (artistId == null)
+                return NotFound("Artist profile not found for this account.");
+
+            var result = await _artistProfileService.GetMyOrdersAsync(artistId.Value, page, size, searchTerm, status);
+            return Ok(result);
+        }
+
+        // Xem chi tiết 1 đơn hàng
+        [HttpGet("orders/{orderId}")]
+        [Authorize(Roles = "Artist")]
+        public async Task<IActionResult> GetOrderDetail(int orderId)
+        {
+            var accountId = GetCurrentAccountId();
+            var artistId = await _artistProfileService.GetArtistIdByAccountIdAsync(accountId);
+            if (artistId == null)
+                return NotFound("Artist profile not found for this account.");
+
+            var result = await _artistProfileService.GetOrderDetailAsync(artistId.Value, orderId);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 
     public class CreateWithdrawRequestModel

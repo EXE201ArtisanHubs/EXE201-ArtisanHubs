@@ -7,6 +7,7 @@ using ArtisanHubs.API.DTOs.Common;
 using ArtisanHubs.Data.Entities;
 using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.DTOs.DTO.Reponse.ArtistProfile;
+using ArtisanHubs.DTOs.DTO.Reponse.Order;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 
 namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces
@@ -23,5 +24,7 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces
         Task<ApiResponse<decimal>> GetWalletBalanceAsync(int artistId);
         Task<ApiResponse<List<Commission>>> GetMyCommissionsAsync(int artistId);
         Task<ApiResponse<List<Withdrawrequest>>> GetMyWithdrawRequestsAsync(int artistId);
+        Task<ApiResponse<IPaginate<ArtistOrderResponse>>> GetMyOrdersAsync(int artistId, int page, int size, string searchTerm, string status);
+        Task<ApiResponse<ArtistOrderResponse>> GetOrderDetailAsync(int artistId, int orderId);
     }
 }
