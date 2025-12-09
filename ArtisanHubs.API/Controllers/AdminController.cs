@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -39,5 +40,17 @@ public class AdminController : ControllerBase
         if (!success)
             return BadRequest("Unable to approve withdrawal request.");
         return Ok("Withdrawal request approved.");
+    }
+
+    [HttpGet("artist-wallet/{artistId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetArtistWalletBalance(int artistId)
+    {
+        var wallet = await _adminService.GetArtistWalletBalanceAsync(artistId);
+
+        if (wallet == null)
+            return NotFound("Wallet not found for this artist.");
+
+        return Ok(wallet);
     }
 }
