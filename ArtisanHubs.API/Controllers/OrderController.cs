@@ -83,7 +83,7 @@ namespace ArtisanHubs.API.Controllers
         }
 
         [HttpGet("all")]
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllOrders(
             [FromQuery] int page = 1,
             [FromQuery] int size = 10,
@@ -94,6 +94,15 @@ namespace ArtisanHubs.API.Controllers
             return Ok(result);
         }
 
+        // Admin: Get order detail with items and commission breakdown
+        [HttpGet("{orderId}/admin-detail")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetOrderDetailForAdmin(int orderId)
+        {
+            var result = await _orderService.GetOrderDetailForAdminAsync(orderId);
+            return StatusCode(result.StatusCode, result);
+        }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
         [HttpGet("my-orders")]
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> GetMyOrders(
