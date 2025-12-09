@@ -94,4 +94,50 @@ public class AdminController : ControllerBase
         var result = await _adminService.GetOrderStatisticsAsync(fromDate, toDate);
         return StatusCode(result.StatusCode, result);
     }
+
+    // Get all artists with statistics
+    [HttpGet("artists")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAllArtists(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 10,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? status = null)
+    {
+        var result = await _adminService.GetAllArtistsForAdminAsync(page, size, searchTerm, status);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    // Get all products of a specific artist
+    [HttpGet("artists/{artistId}/products")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetArtistProducts(int artistId)
+    {
+        var result = await _adminService.GetArtistProductsAsync(artistId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    // Get revenue statistics for charts
+    [HttpGet("statistics/revenue")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetRevenueStatistics(
+        [FromQuery] string period = "month",
+        [FromQuery] int count = 6,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null)
+    {
+        var result = await _adminService.GetRevenueStatisticsAsync(period, count, fromDate, toDate);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    // Get order status distribution for pie chart
+    [HttpGet("statistics/order-status")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetOrderStatusDistribution(
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null)
+    {
+        var result = await _adminService.GetOrderStatusDistributionAsync(fromDate, toDate);
+        return StatusCode(result.StatusCode, result);
+    }
 }
