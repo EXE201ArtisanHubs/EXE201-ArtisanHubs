@@ -93,5 +93,51 @@ namespace ArtisanHubs.API.Controllers
             var result = await _orderService.GetAllOrdersAsync(page, size, searchTerm, status);
             return Ok(result);
         }
+
+        [HttpGet("my-orders")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> GetMyOrders(
+            [FromQuery] int page = 1,
+            [FromQuery] int size = 10,
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] string? status = null)
+        {
+            var accountIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(accountIdString) || !int.TryParse(accountIdString, out int accountId))
+            {
+                return Unauthorized("Invalid account ID");
+            }
+
+            var result = await _orderService.GetMyOrdersAsync(accountId, page, size, searchTerm, status);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpGet("my-orders/{orderId}")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> GetMyOrderDetail(int orderId)
+        {
+            var accountIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(accountIdString) || !int.TryParse(accountIdString, out int accountId))
+            {
+                return Unauthorized("Invalid account ID");
+            }
+
+            var result = await _orderService.GetMyOrderDetailAsync(accountId, orderId);
+            if (!result.IsSuccess)
+            {
+                if (result.StatusCode == 404)
+                {
+                    return NotFound(result);
+                }
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
     }
 }

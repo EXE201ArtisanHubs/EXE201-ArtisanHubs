@@ -332,5 +332,186 @@ namespace ArtisanHubs.Bussiness.Services
                 return ApiResponse<IPaginate<OrderResponse>>.FailResponse($"Error: {ex.Message}");
             }
         }
+
+        public async Task<ApiResponse<IPaginate<CustomerOrderResponse>>> GetMyOrdersAsync(
+            int accountId, 
+            int page = 1, 
+            int size = 10, 
+            string searchTerm = null, 
+            string status = null)
+        {
+            try
+            {
+                IQueryable<Order> query = _dbContext.Orders
+                    .Include(o => o.Orderdetails)
+                        .ThenInclude(od => od.Product)
+                            .ThenInclude(p => p.Artist)
+                    .Where(o => o.AccountId == accountId)
+                    .AsNoTracking();
+
+                // Filter by status
+                if (!string.IsNullOrEmpty(status))
+                {
+                    query = query.Where(o => o.Status.ToLower() == status.ToLower());
+                }
+
+                // Search by order code or product name
+                if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    string keyword = searchTerm.ToLower();
+                    query = query.Where(o =>
+                        o.OrderCode.ToString().Contains(keyword) ||
+                        o.Orderdetails.Any(od => od.Product.Name.ToLower().Contains(keyword))
+                    );
+                }
+
+                // Get total count
+                var total = await query.CountAsync();
+
+                // Apply pagination
+                var orders = await query
+                    .OrderByDescending(o => o.CreatedAt)
+                    .Skip((page - 1) * size)
+                    .Take(size)
+                    .ToListAsync();
+
+                // Map to response DTO
+                var orderResponses = new List<CustomerOrderResponse>();
+
+                foreach (var order in orders)
+                {
+                    var orderItems = new List<CustomerOrderItemResponse>();
+                    decimal subTotal = 0;
+                    int totalItems = 0;
+
+                    foreach (var detail in order.Orderdetails)
+                    {
+                        var itemResponse = new CustomerOrderItemResponse
+                        {
+                            OrderDetailId = detail.OrderDetailId,
+                            ProductId = detail.ProductId,
+                            ProductName = detail.Product?.Name ?? "Unknown",
+                            ProductImage = detail.Product?.Images,
+                            Quantity = detail.Quantity,
+                            UnitPrice = detail.UnitPrice,
+                            TotalPrice = detail.TotalPrice,
+                            ArtistId = detail.Product?.ArtistId ?? 0,
+                            ArtistName = detail.Product?.Artist?.ArtistName ?? "Unknown"
+                        };
+
+                        orderItems.Add(itemResponse);
+                        subTotal += detail.TotalPrice;
+                        totalItems += detail.Quantity;
+                    }
+
+                    var orderResponse = new CustomerOrderResponse
+                    {
+                        OrderId = order.OrderId,
+                        OrderCode = order.OrderCode,
+                        OrderDate = order.OrderDate,
+                        Status = order.Status,
+                        PaymentMethod = order.PaymentMethod ?? "Unknown",
+                        ShippingFee = order.ShippingFee,
+                        TotalAmount = order.TotalAmount,
+                        ShippingAddress = order.ShippingAddress ?? "",
+                        CreatedAt = order.CreatedAt,
+                        UpdatedAt = order.UpdatedAt,
+                        OrderItems = orderItems,
+                        TotalItems = totalItems,
+                        SubTotal = subTotal
+                    };
+
+                    orderResponses.Add(orderResponse);
+                }
+
+                var totalPages = (int)Math.Ceiling(total / (double)size);
+
+                var paginatedResult = new Paginate<CustomerOrderResponse>
+                {
+                    Items = orderResponses,
+                    Page = page,
+                    Size = size,
+                    Total = total,
+                    TotalPages = totalPages
+                };
+
+                return ApiResponse<IPaginate<CustomerOrderResponse>>.SuccessResponse(
+                    paginatedResult,
+                    "Get customer orders successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<IPaginate<CustomerOrderResponse>>.FailResponse($"Error: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<CustomerOrderResponse>> GetMyOrderDetailAsync(int accountId, int orderId)
+        {
+            try
+            {
+                var order = await _dbContext.Orders
+                    .Include(o => o.Orderdetails)
+                        .ThenInclude(od => od.Product)
+                            .ThenInclude(p => p.Artist)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.OrderId == orderId && o.AccountId == accountId);
+
+                if (order == null)
+                {
+                    return ApiResponse<CustomerOrderResponse>.FailResponse("Order not found", 404);
+                }
+
+                var orderItems = new List<CustomerOrderItemResponse>();
+                decimal subTotal = 0;
+                int totalItems = 0;
+
+                foreach (var detail in order.Orderdetails)
+                {
+                    var itemResponse = new CustomerOrderItemResponse
+                    {
+                        OrderDetailId = detail.OrderDetailId,
+                        ProductId = detail.ProductId,
+                        ProductName = detail.Product?.Name ?? "Unknown",
+                        ProductImage = detail.Product?.Images,
+                        Quantity = detail.Quantity,
+                        UnitPrice = detail.UnitPrice,
+                        TotalPrice = detail.TotalPrice,
+                        ArtistId = detail.Product?.ArtistId ?? 0,
+                        ArtistName = detail.Product?.Artist?.ArtistName ?? "Unknown"
+                    };
+
+                    orderItems.Add(itemResponse);
+                    subTotal += detail.TotalPrice;
+                    totalItems += detail.Quantity;
+                }
+
+                var orderResponse = new CustomerOrderResponse
+                {
+                    OrderId = order.OrderId,
+                    OrderCode = order.OrderCode,
+                    OrderDate = order.OrderDate,
+                    Status = order.Status,
+                    PaymentMethod = order.PaymentMethod ?? "Unknown",
+                    ShippingFee = order.ShippingFee,
+                    TotalAmount = order.TotalAmount,
+                    ShippingAddress = order.ShippingAddress ?? "",
+                    CreatedAt = order.CreatedAt,
+                    UpdatedAt = order.UpdatedAt,
+                    OrderItems = orderItems,
+                    TotalItems = totalItems,
+                    SubTotal = subTotal
+                };
+
+                return ApiResponse<CustomerOrderResponse>.SuccessResponse(
+                    orderResponse,
+                    "Get order detail successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<CustomerOrderResponse>.FailResponse($"Error: {ex.Message}");
+            }
+        }
     }
 }
