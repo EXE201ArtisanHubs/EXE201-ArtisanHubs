@@ -190,4 +190,22 @@ public class AdminService
 
         return true;
     }
+
+    public async Task<object> GetArtistWalletBalanceAsync(int artistId)
+    {
+        var wallet = await _context.Artistwallets
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.ArtistId == artistId);
+
+        if (wallet == null)
+            return null;
+
+        return new
+        {
+            artistId = artistId,
+            balance = wallet.Balance,
+            pendingBalance = wallet.PendingBalance,
+            createdAt = wallet.CreatedAt
+        };
+    }
 }
