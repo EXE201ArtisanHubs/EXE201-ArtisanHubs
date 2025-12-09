@@ -67,6 +67,7 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
                 {
                     AccountId = account.AccountId,
                     Email = account.Email,
+                    Username = account.Username,
                     Role = account.Role,
                     Token = token
                 };
@@ -184,7 +185,7 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
         //    }
         //}
 
-        public async Task<ApiResponse<bool>> UpdateAsync(int id, AccountRequest request, string? avatarUrl = null)
+        public async Task<ApiResponse<bool>> UpdateAsync(int id, UpdateAccountRequest request, string? avatarUrl = null)
         {
             try
             {
@@ -194,10 +195,10 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
                     return ApiResponse<bool>.FailResponse("Account not found.", 404);
                 }
 
-                // Map dữ liệu từ request
+                // Map dữ liệu từ request (không bao gồm password)
                 _mapper.Map(request, existingAccount);
 
-                // ✅ THÊM: Cập nhật avatar URL nếu có ảnh mới
+                // ✅ Cập nhật avatar URL nếu có ảnh mới
                 if (!string.IsNullOrEmpty(avatarUrl))
                 {
                     existingAccount.Avatar = avatarUrl;

@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ArtisanHubs.Data.Entities;
+using ArtisanHubs.API.DTOs.Common;
+using ArtisanHubs.Data.Paginate;
+using ArtisanHubs.DTOs.DTO.Reponse.Transaction;
 
 public class AdminService
 {
@@ -207,5 +211,141 @@ public class AdminService
             pendingBalance = wallet.PendingBalance,
             createdAt = wallet.CreatedAt
         };
+    }
+
+    public async Task<ApiResponse<IPaginate<TransactionResponse>>> GetAllTransactionsAsync(
+        int page = 1, 
+        int size = 10, 
+        string searchTerm = null, 
+        string transactionType = null, 
+        string status = null)
+    {
+        try
+        {
+            IQueryable<Wallettransaction> query = _context.Wallettransactions
+                .Include(t => t.Wallet)
+                    .ThenInclude(w => w.Artist)
+                .Include(t => t.Commission)
+                    .ThenInclude(c => c.Order)
+                .Include(t => t.Withdraw)
+                .AsNoTracking();
+
+            // Search by artist name or transaction ID
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                string keyword = searchTerm.ToLower();
+                query = query.Where(t =>
+                    t.Wallet.Artist.ArtistName.ToLower().Contains(keyword) ||
+                    t.TransactionId.ToString().Contains(keyword)
+                );
+            }
+
+            // Filter by transaction type
+            if (!string.IsNullOrEmpty(transactionType))
+            {
+                query = query.Where(t => t.TransactionType.ToLower() == transactionType.ToLower());
+            }
+
+            // Filter by status
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(t => t.Status.ToLower() == status.ToLower());
+            }
+
+            // Get total count
+            var total = await query.CountAsync();
+
+            // Apply pagination
+            var transactions = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * size)
+                .Take(size)
+                .ToListAsync();
+
+            // Map to response DTO
+            var transactionResponses = transactions.Select(t => new TransactionResponse
+            {
+                TransactionId = t.TransactionId,
+                WalletId = t.WalletId,
+                ArtistId = t.Wallet.ArtistId,
+                ArtistName = t.Wallet.Artist?.ArtistName ?? "Unknown",
+                Amount = t.Amount,
+                TransactionType = t.TransactionType,
+                CommissionId = t.CommissionId,
+                WithdrawId = t.WithdrawId,
+                PaymentId = t.PaymentId,
+                Status = t.Status,
+                CreatedAt = t.CreatedAt,
+                OrderCode = t.Commission?.Order?.OrderCode.ToString(),
+                BankName = t.Withdraw?.BankName
+            }).ToList();
+
+            var totalPages = (int)Math.Ceiling(total / (double)size);
+
+            var paginatedResult = new Paginate<TransactionResponse>
+            {
+                Items = transactionResponses,
+                Page = page,
+                Size = size,
+                Total = total,
+                TotalPages = totalPages
+            };
+
+            return ApiResponse<IPaginate<TransactionResponse>>.SuccessResponse(
+                paginatedResult,
+                "Get paginated transactions successfully"
+            );
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<IPaginate<TransactionResponse>>.FailResponse($"Error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResponse<TransactionResponse>> GetTransactionByIdAsync(int transactionId)
+    {
+        try
+        {
+            var transaction = await _context.Wallettransactions
+                .Include(t => t.Wallet)
+                    .ThenInclude(w => w.Artist)
+                .Include(t => t.Commission)
+                    .ThenInclude(c => c.Order)
+                .Include(t => t.Withdraw)
+                .Include(t => t.Payment)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TransactionId == transactionId);
+
+            if (transaction == null)
+            {
+                return ApiResponse<TransactionResponse>.FailResponse("Transaction not found", 404);
+            }
+
+            var response = new TransactionResponse
+            {
+                TransactionId = transaction.TransactionId,
+                WalletId = transaction.WalletId,
+                ArtistId = transaction.Wallet.ArtistId,
+                ArtistName = transaction.Wallet.Artist?.ArtistName ?? "Unknown",
+                Amount = transaction.Amount,
+                TransactionType = transaction.TransactionType,
+                CommissionId = transaction.CommissionId,
+                WithdrawId = transaction.WithdrawId,
+                PaymentId = transaction.PaymentId,
+                Status = transaction.Status,
+                CreatedAt = transaction.CreatedAt,
+                OrderCode = transaction.Commission?.Order?.OrderCode.ToString(),
+                BankName = transaction.Withdraw?.BankName
+            };
+
+            return ApiResponse<TransactionResponse>.SuccessResponse(
+                response,
+                "Get transaction successfully"
+            );
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<TransactionResponse>.FailResponse($"Error: {ex.Message}");
+        }
     }
 }

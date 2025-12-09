@@ -6,6 +6,7 @@ using ArtisanHubs.DTOs.DTO.Reponse.Forums;
 using ArtisanHubs.DTOs.DTO.Reponse.Order;
 using ArtisanHubs.DTOs.DTO.Reponse.Products;
 using ArtisanHubs.DTOs.DTO.Reponse.WorkshopPackages;
+using ArtisanHubs.DTOs.DTO.Request.Accounts;
 using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 using ArtisanHubs.DTOs.DTO.Request.Categories;
 using ArtisanHubs.DTOs.DTO.Request.Forums;
@@ -28,7 +29,15 @@ namespace ArtisanHubs.Bussiness.Mapping
             CreateMap<AccountRequest, Account>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => "Active")) // default
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
-                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); ;
+                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore());
+
+            // UpdateAccountRequest -> Account (không có Password)
+            CreateMap<UpdateAccountRequest, Account>()
+                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
+                .ForMember(dest => dest.Email, opt => opt.Ignore())
+                .ForMember(dest => dest.Role, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
 
 
 

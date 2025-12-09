@@ -53,4 +53,25 @@ public class AdminController : ControllerBase
 
         return Ok(wallet);
     }
+
+    [HttpGet("transactions")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAllTransactions(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 10,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? transactionType = null,
+        [FromQuery] string? status = null)
+    {
+        var result = await _adminService.GetAllTransactionsAsync(page, size, searchTerm, transactionType, status);
+        return Ok(result);
+    }
+
+    [HttpGet("transactions/{transactionId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetTransactionById(int transactionId)
+    {
+        var result = await _adminService.GetTransactionByIdAsync(transactionId);
+        return StatusCode(result.StatusCode, result);
+    }
 }

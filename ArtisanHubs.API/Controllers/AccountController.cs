@@ -100,9 +100,17 @@ namespace ArtisanHubs.API.Controllers
         /// </summary>
         [Authorize(Roles = "Customer,Artist,Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromForm] AccountRequest request)
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateAccountRequest request)
         {
-            var result = await _accountService.UpdateAsync(id, request);
+            string? avatarUrl = null;
+            
+            // Upload ảnh nếu có
+            if (request.AvatarFile != null)
+            {
+                avatarUrl = await _photoService.UploadImageAsync(request.AvatarFile);
+            }
+
+            var result = await _accountService.UpdateAsync(id, request, avatarUrl);
             return StatusCode(result.StatusCode, result);
         }
 
