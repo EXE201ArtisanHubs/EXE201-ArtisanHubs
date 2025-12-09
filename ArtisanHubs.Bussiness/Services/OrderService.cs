@@ -147,8 +147,8 @@ namespace ArtisanHubs.Bussiness.Services
                 orderCode.ToString(),
                 totalAmount,
                 "Order Payment",
-                "https://example.com/success",
-                "https://example.com/cancel"
+                "https://localhost:5173/",
+                "https://localhost:5173/"
                 );
 
 
