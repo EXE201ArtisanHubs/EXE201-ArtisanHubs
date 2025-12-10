@@ -10,11 +10,13 @@ using ArtisanHubs.Data.Entities;
 using ArtisanHubs.Data.Paginate;
 using ArtisanHubs.Data.Repositories.Orders.Interfaces;
 using ArtisanHubs.DTOs.DTO.Reponse.Order;
+using ArtisanHubs.DTOs.DTO.Reponse.Admin;
 using ArtisanHubs.DTOs.DTO.Request.Orders;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using SendGrid.Helpers.Mail;
+using Microsoft.Extensions.Configuration;
 
 namespace ArtisanHubs.Bussiness.Services
 {
@@ -27,8 +29,9 @@ namespace ArtisanHubs.Bussiness.Services
         private readonly GHTKService _gHTKService;
         private readonly AdminService _adminSerivce;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _configuration;
 
-        public OrderService(IOrderRepository orderRepository, ArtisanHubsDbContext dbContext, PayOSService payOSService, ICartService cartService, GHTKService gHTKService, AdminService adminSerivce, IMapper mapper)
+        public OrderService(IOrderRepository orderRepository, ArtisanHubsDbContext dbContext, PayOSService payOSService, ICartService cartService, GHTKService gHTKService, AdminService adminSerivce, IMapper mapper, IConfiguration configuration)
         {
             _orderRepository = orderRepository;
             _dbContext = dbContext;
@@ -37,6 +40,7 @@ namespace ArtisanHubs.Bussiness.Services
             _gHTKService = gHTKService;
             _adminSerivce = adminSerivce;
             _mapper = mapper;
+            _configuration = configuration;
         }
 
         public async Task<bool> UpdateOrderStatusAsync(long orderCode, string newStatus)
@@ -193,7 +197,7 @@ namespace ArtisanHubs.Bussiness.Services
                 order.UpdatedAt = DateTime.UtcNow;
 
                 // 🔥 Gọi tạo hoa hồng cho đơn hàng đã thanh toán
-                decimal platformRate = 0.10m; // 10% hoa hồng sàn
+                decimal platformRate = decimal.Parse(_configuration["Commission:PlatformRate"] ?? "0.10");
                 await _adminSerivce.CreateCommissionForPaidOrderAsync(order.OrderId, platformRate);
             }
             else if (paymentStatus == "CANCELLED")
@@ -511,6 +515,102 @@ namespace ArtisanHubs.Bussiness.Services
             catch (Exception ex)
             {
                 return ApiResponse<CustomerOrderResponse>.FailResponse($"Error: {ex.Message}");
+            }
+        }
+
+        // Admin: Get order detail with full information including items and commissions
+        public async Task<ApiResponse<AdminOrderDetailResponse>> GetOrderDetailForAdminAsync(int orderId)
+        {
+            try
+            {
+                var order = await _dbContext.Orders
+                    .Include(o => o.Account)
+                    .Include(o => o.Orderdetails)
+                        .ThenInclude(od => od.Product)
+                            .ThenInclude(p => p.Artist)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+                if (order == null)
+                {
+                    return ApiResponse<AdminOrderDetailResponse>.FailResponse("Order not found", 404);
+                }
+
+                // Get all commissions for this order
+                var commissions = await _dbContext.Commissions
+                    .Where(c => c.OrderId == orderId)
+                    .ToListAsync();
+
+                var orderItems = new List<AdminOrderItemResponse>();
+                decimal subTotal = 0;
+                int totalItems = 0;
+                decimal totalPlatformCommission = 0;
+                decimal totalArtistEarnings = 0;
+
+                foreach (var detail in order.Orderdetails)
+                {
+                    var commission = commissions.FirstOrDefault(c => 
+                        c.ProductId == detail.ProductId && 
+                        c.OrderId == orderId);
+
+                    var itemResponse = new AdminOrderItemResponse
+                    {
+                        OrderDetailId = detail.OrderDetailId,
+                        ProductId = detail.ProductId,
+                        ProductName = detail.Product?.Name ?? "Unknown",
+                        ProductImage = detail.Product?.Images,
+                        Quantity = detail.Quantity,
+                        UnitPrice = detail.UnitPrice,
+                        TotalPrice = detail.TotalPrice,
+                        ArtistId = detail.Product?.ArtistId ?? 0,
+                        ArtistName = detail.Product?.Artist?.ArtistName ?? "Unknown",
+                        CommissionId = commission?.CommissionId,
+                        CommissionAmount = commission?.Amount ?? 0,
+                        CommissionRate = commission?.Rate ?? 0,
+                        PlatformCommission = commission?.AdminShare ?? 0,
+                        ArtistEarning = (commission != null) ? (commission.Amount - commission.AdminShare) : 0,
+                        IsPaid = commission?.IsPaid ?? false,
+                        PaidAt = commission?.CreatedAt
+                    };
+
+                    orderItems.Add(itemResponse);
+                    subTotal += detail.TotalPrice;
+                    totalItems += detail.Quantity;
+                    totalPlatformCommission += commission?.AdminShare ?? 0;
+                    totalArtistEarnings += (commission != null) ? (commission.Amount - commission.AdminShare) : 0;
+                }
+
+                var orderResponse = new AdminOrderDetailResponse
+                {
+                    OrderId = order.OrderId,
+                    OrderCode = order.OrderCode,
+                    OrderDate = order.OrderDate ?? DateTime.UtcNow,
+                    Status = order.Status,
+                    PaymentMethod = order.PaymentMethod ?? "Unknown",
+                    ShippingFee = order.ShippingFee,
+                    TotalAmount = order.TotalAmount,
+                    ShippingAddress = order.ShippingAddress ?? "",
+                    CustomerId = order.AccountId,
+                    CustomerName = order.Account?.Username ?? "Unknown",
+                    CustomerEmail = order.Account?.Email ?? "Unknown",
+                    CustomerPhone = order.Account?.Phone,
+                    OrderItems = orderItems,
+                    TotalItems = totalItems,
+                    SubTotal = subTotal,
+                    TotalPlatformCommission = totalPlatformCommission,
+                    TotalArtistEarnings = totalArtistEarnings,
+                    CreatedAt = order.CreatedAt ?? DateTime.UtcNow,
+                    UpdatedAt = order.UpdatedAt ?? DateTime.UtcNow
+                };
+
+                return ApiResponse<AdminOrderDetailResponse>.SuccessResponse(
+                    orderResponse,
+                    "Get order detail successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<AdminOrderDetailResponse>.FailResponse($"Error: {ex.Message}");
             }
         }
     }
