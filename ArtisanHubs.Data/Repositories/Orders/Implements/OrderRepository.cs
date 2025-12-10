@@ -42,5 +42,11 @@ namespace ArtisanHubs.Data.Repositories.Orders.Implements
             _context.Orders.Remove(order);
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task<Order?> GetByOrderCodeAsync(long orderCode)
+        {
+            return await _context.Orders
+                .FirstOrDefaultAsync(o => o.OrderCode == orderCode);
+        }
     }
 }

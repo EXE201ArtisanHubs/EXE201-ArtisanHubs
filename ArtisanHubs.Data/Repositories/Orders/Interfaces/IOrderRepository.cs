@@ -6,6 +6,7 @@ namespace ArtisanHubs.Data.Repositories.Orders.Interfaces
 {
     public interface IOrderRepository
     {
+        Task<Order?> GetByOrderCodeAsync(long orderCode);
         Task<Order?> GetByIdAsync(int orderId);
         Task<IEnumerable<Order>> GetAllAsync();
         Task CreateAsync(Order order);

@@ -39,13 +39,13 @@ namespace ArtisanHubs.Bussiness.Services
             _mapper = mapper;
         }
 
-        public async Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus)
+        public async Task<bool> UpdateOrderStatusAsync(long orderCode, string newStatus)
         {
-            var allowedStatuses = new[] { "Doing", "In transit", "Done" };
+            var allowedStatuses = new[] { "DOING", "IN TRANSIT", "DONE", "PAID", "CANCELLED" };
             if (!allowedStatuses.Contains(newStatus))
                 return false;
 
-            var order = await _orderRepository.GetByIdAsync(orderId);
+            var order = await _orderRepository.GetByOrderCodeAsync(orderCode);
             if (order == null)
                 return false;
 

@@ -20,10 +20,10 @@ namespace ArtisanHubs.API.Controllers
             _orderService = orderService;
         }
 
-        [HttpPut("{id}/status")]
-        public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] string status)
+        [HttpPut("status")]
+        public async Task<IActionResult> UpdateOrderStatus(long orderCode, [FromBody] string status)
         {
-            var result = await _orderService.UpdateOrderStatusAsync(id, status);
+            var result = await _orderService.UpdateOrderStatusAsync(orderCode, status);
             if (!result)
                 return NotFound();
             return NoContent();
