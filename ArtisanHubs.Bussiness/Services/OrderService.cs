@@ -16,6 +16,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using SendGrid.Helpers.Mail;
+using Microsoft.Extensions.Configuration;
 
 namespace ArtisanHubs.Bussiness.Services
 {
@@ -28,8 +29,9 @@ namespace ArtisanHubs.Bussiness.Services
         private readonly GHTKService _gHTKService;
         private readonly AdminService _adminSerivce;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _configuration;
 
-        public OrderService(IOrderRepository orderRepository, ArtisanHubsDbContext dbContext, PayOSService payOSService, ICartService cartService, GHTKService gHTKService, AdminService adminSerivce, IMapper mapper)
+        public OrderService(IOrderRepository orderRepository, ArtisanHubsDbContext dbContext, PayOSService payOSService, ICartService cartService, GHTKService gHTKService, AdminService adminSerivce, IMapper mapper, IConfiguration configuration)
         {
             _orderRepository = orderRepository;
             _dbContext = dbContext;
@@ -38,6 +40,7 @@ namespace ArtisanHubs.Bussiness.Services
             _gHTKService = gHTKService;
             _adminSerivce = adminSerivce;
             _mapper = mapper;
+            _configuration = configuration;
         }
 
         public async Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus)
@@ -194,7 +197,7 @@ namespace ArtisanHubs.Bussiness.Services
                 order.UpdatedAt = DateTime.UtcNow;
 
                 // 🔥 Gọi tạo hoa hồng cho đơn hàng đã thanh toán
-                decimal platformRate = 0.10m; // 10% hoa hồng sàn
+                decimal platformRate = decimal.Parse(_configuration["Commission:PlatformRate"] ?? "0.10");
                 await _adminSerivce.CreateCommissionForPaidOrderAsync(order.OrderId, platformRate);
             }
             else if (paymentStatus == "CANCELLED")
@@ -565,7 +568,7 @@ namespace ArtisanHubs.Bussiness.Services
                         CommissionAmount = commission?.Amount ?? 0,
                         CommissionRate = commission?.Rate ?? 0,
                         PlatformCommission = commission?.AdminShare ?? 0,
-                        ArtistEarning = commission?.Amount ?? 0,
+                        ArtistEarning = (commission != null) ? (commission.Amount - commission.AdminShare) : 0,
                         IsPaid = commission?.IsPaid ?? false,
                         PaidAt = commission?.CreatedAt
                     };
@@ -574,7 +577,7 @@ namespace ArtisanHubs.Bussiness.Services
                     subTotal += detail.TotalPrice;
                     totalItems += detail.Quantity;
                     totalPlatformCommission += commission?.AdminShare ?? 0;
-                    totalArtistEarnings += commission?.Amount ?? 0;
+                    totalArtistEarnings += (commission != null) ? (commission.Amount - commission.AdminShare) : 0;
                 }
 
                 var orderResponse = new AdminOrderDetailResponse
