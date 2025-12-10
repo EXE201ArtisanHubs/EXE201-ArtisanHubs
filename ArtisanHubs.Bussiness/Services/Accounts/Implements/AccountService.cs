@@ -214,7 +214,7 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
                 return ApiResponse<bool>.FailResponse($"An error occurred: {ex.Message}", 500);
             }
         }
-        // Xoá Account
+        // Xoá Account (Soft Delete)
         public async Task<ApiResponse<bool>> DeleteAsync(int id)
         {
             try
@@ -222,8 +222,10 @@ namespace ArtisanHubs.Bussiness.Services.Accounts.Implements
                 var account = await _repo.GetByIdAsync(id);
                 if (account == null) return ApiResponse<bool>.FailResponse("Account not found", 404);
 
-                await _repo.RemoveAsync(account);
-                return ApiResponse<bool>.SuccessResponse(true, "Delete account successfully");
+                // Soft delete: Chỉ đổi status thành Inactive
+                account.Status = "Inactive";
+                await _repo.UpdateAsync(account);
+                return ApiResponse<bool>.SuccessResponse(true, "Account has been deactivated successfully");
             }
             catch (Exception ex)
             {

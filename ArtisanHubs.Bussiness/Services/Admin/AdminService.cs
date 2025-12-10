@@ -155,16 +155,16 @@ public class AdminService
             if (product == null) continue;
 
             decimal totalAmount = detail.TotalPrice;
-            decimal artistShare = totalAmount * (1 - platformRate);
             decimal adminShare = totalAmount * platformRate;
+            decimal artistShare = totalAmount - adminShare;
 
             var commission = new Commission
             {
                 ProductId = product.ProductId,
                 ArtistId = product.ArtistId,
                 OrderId = order.OrderId,
-                Amount = artistShare,
-                AdminShare = adminShare,
+                Amount = totalAmount, // Tổng hoa hồng
+                AdminShare = adminShare, // Phần sàn (10%)
                 Rate = platformRate,
                 IsPaid = false,
                 CreatedAt = DateTime.UtcNow
