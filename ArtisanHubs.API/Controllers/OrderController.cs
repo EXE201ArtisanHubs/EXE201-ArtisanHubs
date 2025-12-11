@@ -148,5 +148,18 @@ namespace ArtisanHubs.API.Controllers
 
             return Ok(result);
         }
+
+        // Customer: Xác nhận đã nhận hàng thành công
+        [HttpPost("my-orders/{orderId}/confirm-delivered")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> ConfirmDelivered(int orderId)
+        {
+            var accountIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(accountIdString, out int accountId))
+                return Unauthorized("Invalid token");
+
+            var result = await _orderService.ConfirmDeliveredAsync(accountId, orderId);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

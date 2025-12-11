@@ -615,5 +615,45 @@ namespace ArtisanHubs.Bussiness.Services
                 return ApiResponse<AdminOrderDetailResponse>.FailResponse($"Error: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Customer xác nhận đã nhận hàng thành công
+        /// Trigger chuyển tiền từ PendingBalance sang Balance cho Artist
+        /// </summary>
+        public async Task<ApiResponse<object>> ConfirmDeliveredAsync(int accountId, int orderId)
+        {
+            try
+            {
+                // Tìm order và check xem có thuộc về customer này không
+                var order = await _dbContext.Orders
+                    .FirstOrDefaultAsync(o => o.OrderId == orderId && o.AccountId == accountId);
+
+                if (order == null)
+                    return ApiResponse<object>.FailResponse("Order not found or does not belong to you", 404);
+
+                // Validate status phải là Shipping
+                if (order.Status != "Shipping")
+                    return ApiResponse<object>.FailResponse($"Cannot confirm delivery. Current status: {order.Status}. Required: Shipping", 400);
+
+                // Cập nhật status thành Delivered
+                order.Status = "Delivered";
+                order.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+
+                // Chuyển tiền cho Artist (PendingBalance → Balance)
+                var releaseResult = await _adminSerivce.ReleaseCommissionToArtistAsync(orderId);
+                if (!releaseResult)
+                    return ApiResponse<object>.FailResponse("Order updated but failed to release commission to artist", 500);
+
+                return ApiResponse<object>.SuccessResponse(
+                    new { OrderId = orderId, Status = "Delivered" },
+                    "Order confirmed as delivered successfully. Commission released to artist."
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.FailResponse($"Error: {ex.Message}");
+            }
+        }
     }
 }

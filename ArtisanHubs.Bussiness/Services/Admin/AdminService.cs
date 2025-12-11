@@ -147,6 +147,12 @@ public class AdminService
         if (order == null || order.Status != "PAID")
             return false;
 
+        // ✅ Check xem đã tạo commission cho order này chưa (tránh trùng)
+        var existingCommissions = await _context.Commissions
+            .AnyAsync(c => c.OrderId == orderId);
+        if (existingCommissions)
+            return true; // Đã có commission rồi, không tạo nữa
+
         foreach (var detail in order.Orderdetails)
         {
             var product = await _context.Products
@@ -949,6 +955,63 @@ public class AdminService
         catch (Exception ex)
         {
             return ApiResponse<OrderStatusDistributionResponse>.FailResponse($"Error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Chuyển tiền từ PendingBalance sang Balance cho Artist khi customer xác nhận đã nhận hàng
+    /// </summary>
+    public async Task<bool> ReleaseCommissionToArtistAsync(int orderId)
+    {
+        try
+        {
+            // Lấy tất cả commission chưa trả của đơn hàng này
+            var commissions = await _context.Commissions
+                .Where(c => c.OrderId == orderId && !c.IsPaid)
+                .ToListAsync();
+
+            if (!commissions.Any())
+                return false; // Không có commission nào hoặc đã trả hết rồi
+
+            foreach (var commission in commissions)
+            {
+                // Tìm ví của artist
+                var wallet = await _context.Artistwallets
+                    .FirstOrDefaultAsync(w => w.ArtistId == commission.ArtistId);
+
+                if (wallet != null)
+                {
+                    // Tính tiền artist nhận được (Amount - AdminShare)
+                    decimal artistEarning = commission.Amount - commission.AdminShare;
+
+                    // Chuyển từ PendingBalance sang Balance
+                    wallet.PendingBalance -= artistEarning;
+                    wallet.Balance += artistEarning;
+
+                    // Đánh dấu commission đã trả
+                    commission.IsPaid = true;
+
+                    // Tạo transaction log
+                    var transaction = new Wallettransaction
+                    {
+                        WalletId = wallet.WalletId,
+                        Amount = artistEarning,
+                        TransactionType = "commission_released", // Loại mới: chuyển từ pending sang balance
+                        CommissionId = commission.CommissionId,
+                        Status = "Completed",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Wallettransactions.Add(transaction);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            // Log error if needed
+            return false;
         }
     }
 }
