@@ -20,18 +20,18 @@ public class AdminService
 
     public async Task<object> GetDashboardStatisticsAsync()
     {
-        // 1. Total revenue (sum of all paid orders)
+        // 1. Total revenue (sum of all delivered orders)
         var totalRevenue = await _context.Orders
-            .Where(o => o.Status == "Paid")
+            .Where(o => o.Status == "Delivered")
             .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
 
         // 2. Total platform commission (sum of commission.admin_share)
         var totalPlatformCommission = await _context.Commissions
             .SumAsync(c => (decimal?)c.AdminShare) ?? 0;
 
-        // 3. Total artist commission (sum of commission.amount)
-        var totalArtistCommission = await _context.Commissions
-            .SumAsync(c => (decimal?)c.Amount) ?? 0;
+        // 3. Total artist earnings (Amount - AdminShare)
+        var commissions = await _context.Commissions.ToListAsync();
+        var totalArtistCommission = commissions.Sum(c => c.Amount - c.AdminShare);
 
         // 4. Best-selling products (sum of orderdetail.quantity grouped by product_id)
         var bestSellingProducts = await _context.Orderdetails
@@ -45,9 +45,9 @@ public class AdminService
             .Take(10)
             .ToListAsync();
 
-        // 5. Revenue trend over time (daily revenue based on paid orders)
+        // 5. Revenue trend over time (daily revenue based on delivered orders)
         var revenueData = await _context.Orders
-            .Where(o => o.Status == "Paid")
+            .Where(o => o.Status == "Delivered")
             .GroupBy(o => o.OrderDate.HasValue ? o.OrderDate.Value.Date : DateTime.MinValue.Date)
             .Select(g => new
             {
@@ -484,12 +484,12 @@ public class AdminService
 
             // Count orders by status
             var totalOrders = orders.Count;
-            var pendingOrders = orders.Count(o => o.Status == "Pending");
-            var paidOrders = orders.Count(o => o.Status == "Paid");
-            var processingOrders = orders.Count(o => o.Status == "Processing");
-            var shippingOrders = orders.Count(o => o.Status == "Shipping");
+            var pendingOrders = orders.Count(o => o.Status == "pending" || o.Status == "Waiting for payment");
+            var paidOrders = orders.Count(o => o.Status == "PAID");
+            var processingOrders = orders.Count(o => o.Status == "DOING");
+            var shippingOrders = orders.Count(o => o.Status == "Shipping" || o.Status == "IN TRANSIT");
             var deliveredOrders = orders.Count(o => o.Status == "Delivered");
-            var cancelledOrders = orders.Count(o => o.Status == "Cancelled");
+            var cancelledOrders = orders.Count(o => o.Status == "CANCELLED" || o.Status == "Payment failed");
 
             // Calculate revenue
             var totalRevenue = orders.Where(o => o.Status != "Cancelled").Sum(o => o.TotalAmount);
@@ -502,7 +502,7 @@ public class AdminService
                 .ToListAsync();
 
             var totalPlatformCommission = commissions.Sum(c => c.AdminShare);
-            var totalArtistEarnings = commissions.Sum(c => c.Amount);
+            var totalArtistEarnings = commissions.Sum(c => c.Amount - c.AdminShare);
             var paidCommissions = commissions.Where(c => c.IsPaid).Sum(c => c.AdminShare);
             var unpaidCommissions = commissions.Where(c => !c.IsPaid).Sum(c => c.AdminShare);
 
@@ -777,7 +777,7 @@ public class AdminService
 
                     revenueData.Insert(0, orders.Sum(o => o.TotalAmount));
                     platformCommissionData.Insert(0, commissions.Sum(c => c.AdminShare));
-                    artistEarningsData.Insert(0, commissions.Sum(c => c.Amount));
+                    artistEarningsData.Insert(0, commissions.Sum(c => c.Amount - c.AdminShare));
                 }
             }
             else if (period.ToLower() == "week")
@@ -803,7 +803,7 @@ public class AdminService
 
                     revenueData.Insert(0, orders.Sum(o => o.TotalAmount));
                     platformCommissionData.Insert(0, commissions.Sum(c => c.AdminShare));
-                    artistEarningsData.Insert(0, commissions.Sum(c => c.Amount));
+                    artistEarningsData.Insert(0, commissions.Sum(c => c.Amount - c.AdminShare));
                 }
             }
             else // month
@@ -830,7 +830,7 @@ public class AdminService
 
                     revenueData.Insert(0, orders.Sum(o => o.TotalAmount));
                     platformCommissionData.Insert(0, commissions.Sum(c => c.AdminShare));
-                    artistEarningsData.Insert(0, commissions.Sum(c => c.Amount));
+                    artistEarningsData.Insert(0, commissions.Sum(c => c.Amount - c.AdminShare));
                 }
             }
 
