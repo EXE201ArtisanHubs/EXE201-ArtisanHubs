@@ -198,6 +198,19 @@ namespace ArtisanHubs.API.Controllers
             var result = await _artistProfileService.GetOrderDetailAsync(artistId.Value, orderId);
             return StatusCode(result.StatusCode, result);
         }
+
+        // Artist: Cập nhật trạng thái đơn hàng (PAID → Processing → Shipping)
+        [HttpPut("orders/{orderId}/status")]
+        public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateOrderStatusRequest request)
+        {
+            var accountId = GetCurrentAccountId();
+            var artistId = await _artistProfileService.GetArtistIdByAccountIdAsync(accountId);
+            if (artistId == null)
+                return NotFound("Artist profile not found for this account.");
+
+            var result = await _artistProfileService.UpdateOrderStatusAsync(artistId.Value, orderId, request.NewStatus);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 
     public class CreateWithdrawRequestModel
