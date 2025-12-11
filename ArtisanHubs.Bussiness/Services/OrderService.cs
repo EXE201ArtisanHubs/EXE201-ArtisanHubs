@@ -45,7 +45,7 @@ namespace ArtisanHubs.Bussiness.Services
 
         public async Task<bool> UpdateOrderStatusAsync(long orderCode, string newStatus)
         {
-            var allowedStatuses = new[] { "DOING", "IN TRANSIT", "DONE", "PAID", "CANCELLED" };
+            var allowedStatuses = new[] { "DOING", "IN TRANSIT", "DONE", "PAID", "CANCELLED", "Shipping" };
             if (!allowedStatuses.Contains(newStatus))
                 return false;
 
@@ -634,7 +634,7 @@ namespace ArtisanHubs.Bussiness.Services
                 if (order == null)
                     return ApiResponse<object>.FailResponse("Order not found or does not belong to you", 404);
 
-                // Validate status phải là Shipping
+                // Validate status phải là Shipping (đang vận chuyển)
                 if (order.Status != "Shipping")
                     return ApiResponse<object>.FailResponse($"Cannot confirm delivery. Current status: {order.Status}. Required: Shipping", 400);
 
