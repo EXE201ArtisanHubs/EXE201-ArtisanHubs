@@ -287,16 +287,25 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
         }
 
         // Lấy số dư ví của nghệ nhân
-        public async Task<ApiResponse<decimal>> GetWalletBalanceAsync(int artistId)
+        public async Task<ApiResponse<object>> GetWalletBalanceAsync(int artistId)
         {
             var wallet = await _context.Artistwallets
                 .AsNoTracking()
                 .FirstOrDefaultAsync(w => w.ArtistId == artistId);
 
             if (wallet == null)
-                return ApiResponse<decimal>.FailResponse("Wallet not found", 404);
+                return ApiResponse<object>.FailResponse("Wallet not found", 404);
 
-            return ApiResponse<decimal>.SuccessResponse(wallet.Balance, "Get wallet balance successfully");
+            var walletInfo = new
+            {
+                artistId = artistId,
+                balance = wallet.Balance,
+                pendingBalance = wallet.PendingBalance,
+                totalBalance = wallet.Balance + wallet.PendingBalance,
+                createdAt = wallet.CreatedAt
+            };
+
+            return ApiResponse<object>.SuccessResponse(walletInfo, "Get wallet balance successfully");
         }
 
         public async Task<ApiResponse<List<Commission>>> GetMyCommissionsAsync(int artistId)

@@ -180,23 +180,33 @@ public class AdminService
             await _context.SaveChangesAsync(); // Để lấy CommissionId
 
             var wallet = await _context.Artistwallets.FirstOrDefaultAsync(w => w.ArtistId == product.ArtistId);
-            if (wallet != null)
+            if (wallet == null)
             {
-                wallet.PendingBalance += artistShare;
-                wallet.CreatedAt = DateTime.UtcNow;
-
-                var walletTransaction = new Wallettransaction
+                // Tự động tạo wallet nếu chưa có
+                wallet = new Artistwallet
                 {
-                    WalletId = wallet.WalletId,
-                    Amount = artistShare,
-                    TransactionType = "commission_pending",
-                    CommissionId = commission.CommissionId,
-                    Status = "Pending",
+                    ArtistId = product.ArtistId,
+                    Balance = 0,
+                    PendingBalance = 0,
                     CreatedAt = DateTime.UtcNow
                 };
-                _context.Wallettransactions.Add(walletTransaction);
+                _context.Artistwallets.Add(wallet);
                 await _context.SaveChangesAsync();
             }
+
+            wallet.PendingBalance += artistShare;
+
+            var walletTransaction = new Wallettransaction
+            {
+                WalletId = wallet.WalletId,
+                Amount = artistShare,
+                TransactionType = "commission_pending",
+                CommissionId = commission.CommissionId,
+                Status = "Pending",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Wallettransactions.Add(walletTransaction);
+            await _context.SaveChangesAsync();
         }
 
         return true;
@@ -979,30 +989,41 @@ public class AdminService
                 var wallet = await _context.Artistwallets
                     .FirstOrDefaultAsync(w => w.ArtistId == commission.ArtistId);
 
-                if (wallet != null)
+                if (wallet == null)
                 {
-                    // Tính tiền artist nhận được (Amount - AdminShare)
-                    decimal artistEarning = commission.Amount - commission.AdminShare;
-
-                    // Chuyển từ PendingBalance sang Balance
-                    wallet.PendingBalance -= artistEarning;
-                    wallet.Balance += artistEarning;
-
-                    // Đánh dấu commission đã trả
-                    commission.IsPaid = true;
-
-                    // Tạo transaction log
-                    var transaction = new Wallettransaction
+                    // Tự động tạo wallet nếu chưa có
+                    wallet = new Artistwallet
                     {
-                        WalletId = wallet.WalletId,
-                        Amount = artistEarning,
-                        TransactionType = "commission_released", // Loại mới: chuyển từ pending sang balance
-                        CommissionId = commission.CommissionId,
-                        Status = "Completed",
+                        ArtistId = commission.ArtistId,
+                        Balance = 0,
+                        PendingBalance = 0,
                         CreatedAt = DateTime.UtcNow
                     };
-                    _context.Wallettransactions.Add(transaction);
+                    _context.Artistwallets.Add(wallet);
+                    await _context.SaveChangesAsync();
                 }
+
+                // Tính tiền artist nhận được (Amount - AdminShare)
+                decimal artistEarning = commission.Amount - commission.AdminShare;
+
+                // Chuyển từ PendingBalance sang Balance
+                wallet.PendingBalance -= artistEarning;
+                wallet.Balance += artistEarning;
+
+                // Đánh dấu commission đã trả
+                commission.IsPaid = true;
+
+                // Tạo transaction log
+                var transaction = new Wallettransaction
+                {
+                    WalletId = wallet.WalletId,
+                    Amount = artistEarning,
+                    TransactionType = "commission_released",
+                    CommissionId = commission.CommissionId,
+                    Status = "Completed",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Wallettransactions.Add(transaction);
             }
 
             await _context.SaveChangesAsync();

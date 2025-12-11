@@ -127,7 +127,7 @@ namespace ArtisanHubs.API.Controllers
         }
 
         [HttpGet("my-orders/{orderId}")]
-        [Authorize(Roles = "Customer")]
+        //[Authorize(Roles = "Customer")]
         public async Task<IActionResult> GetMyOrderDetail(int orderId)
         {
             var accountIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
