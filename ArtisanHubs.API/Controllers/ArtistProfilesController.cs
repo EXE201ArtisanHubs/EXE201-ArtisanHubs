@@ -5,6 +5,7 @@ using ArtisanHubs.DTOs.DTO.Request.ArtistProfile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using ArtisanHubs.DTOs.DTO.Request.Orders;
 
 namespace ArtisanHubs.API.Controllers
 {

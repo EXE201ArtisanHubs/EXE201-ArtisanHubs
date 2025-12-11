@@ -26,5 +26,6 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Interfaces
         Task<ApiResponse<List<Withdrawrequest>>> GetMyWithdrawRequestsAsync(int artistId);
         Task<ApiResponse<IPaginate<ArtistOrderResponse>>> GetMyOrdersAsync(int artistId, int page, int size, string searchTerm, string status);
         Task<ApiResponse<ArtistOrderResponse>> GetOrderDetailAsync(int artistId, int orderId);
+        Task<ApiResponse<object>> UpdateOrderStatusAsync(int artistId, int orderId, string newStatus);
     }
 }
