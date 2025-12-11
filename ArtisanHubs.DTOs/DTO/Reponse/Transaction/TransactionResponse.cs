@@ -18,6 +18,16 @@ namespace ArtisanHubs.DTOs.DTO.Reponse.Transaction
         
         // Related information
         public string OrderCode { get; set; }
+        public int? OrderId { get; set; }
         public string BankName { get; set; }
+        
+        // Commission details
+        public decimal? CommissionAmount { get; set; }
+        public decimal? PlatformCommission { get; set; }
+        public decimal? ArtistEarning { get; set; }
+        public decimal? CommissionRate { get; set; }
+        public int? ProductId { get; set; }
+        public string ProductName { get; set; }
+        public bool? IsPaid { get; set; }
     }
 }

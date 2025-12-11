@@ -252,6 +252,8 @@ public class AdminService
                     .ThenInclude(w => w.Artist)
                 .Include(t => t.Commission)
                     .ThenInclude(c => c.Order)
+                .Include(t => t.Commission)
+                    .ThenInclude(c => c.Product)
                 .Include(t => t.Withdraw)
                 .AsNoTracking();
 
@@ -302,7 +304,16 @@ public class AdminService
                 Status = t.Status,
                 CreatedAt = t.CreatedAt,
                 OrderCode = t.Commission?.Order?.OrderCode.ToString(),
-                BankName = t.Withdraw?.BankName
+                OrderId = t.Commission?.OrderId,
+                BankName = t.Withdraw?.BankName,
+                // Commission details
+                CommissionAmount = t.Commission?.Amount,
+                PlatformCommission = t.Commission?.AdminShare,
+                ArtistEarning = t.Commission != null ? t.Commission.Amount - t.Commission.AdminShare : (decimal?)null,
+                CommissionRate = t.Commission?.Rate,
+                ProductId = t.Commission?.ProductId,
+                ProductName = t.Commission?.Product?.Name,
+                IsPaid = t.Commission?.IsPaid
             }).ToList();
 
             var totalPages = (int)Math.Ceiling(total / (double)size);
