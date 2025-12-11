@@ -144,7 +144,7 @@ public class AdminService
             .Include(o => o.Orderdetails)
             .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
-        if (order == null || order.Status != "Paid")
+        if (order == null || order.Status != "PAID")
             return false;
 
         foreach (var detail in order.Orderdetails)

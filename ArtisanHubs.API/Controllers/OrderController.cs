@@ -42,7 +42,7 @@ namespace ArtisanHubs.API.Controllers
         [HttpPost("commission")]
         public async Task<IActionResult> PayOSWebhook([FromBody] PayOSCallbackRequest request)
         {
-            var result = await _orderService.UpdateOrderStatusAfterPaymentAsync(request.OrderCode);
+            var result = await _orderService.UpdateOrderStatusAfterPaymentAsync(request.OrderCode, request.PaymentStatus);
             if (!result)
                 return BadRequest("Update failed");
             return Ok("Order status updated");

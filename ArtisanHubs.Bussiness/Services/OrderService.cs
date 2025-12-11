@@ -198,18 +198,21 @@ namespace ArtisanHubs.Bussiness.Services
             }
         }
 
-        public async Task<bool> UpdateOrderStatusAfterPaymentAsync(long orderCode)
+        public async Task<bool> UpdateOrderStatusAfterPaymentAsync(long orderCode, string paymentStatus)
         {
             var order = await _dbContext.Orders
                 .FirstOrDefaultAsync(o => o.OrderCode == orderCode);
 
             if (order == null) return false;
 
-            if (order.Status == "PAID")
+            if (paymentStatus.Equals("PAID", StringComparison.OrdinalIgnoreCase))
             {
+                order.Status = "PAID";
+                order.UpdatedAt = DateTime.UtcNow;
                 decimal platformRate = decimal.Parse(_configuration["Commission:PlatformRate"] ?? "0.10");
                 await _adminSerivce.CreateCommissionForPaidOrderAsync(order.OrderId, platformRate);
             }
+            // ... các trường hợp khác
             await _dbContext.SaveChangesAsync();
             return true;
         }

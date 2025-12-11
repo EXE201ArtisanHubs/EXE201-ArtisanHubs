@@ -1,5 +1,5 @@
 public class PayOSCallbackRequest
 {
     public long OrderCode { get; set; }
-    public string Status { get; set; }
+    public string PaymentStatus { get; set; }
 }
