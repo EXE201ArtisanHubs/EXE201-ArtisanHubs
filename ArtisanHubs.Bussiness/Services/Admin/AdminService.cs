@@ -29,9 +29,17 @@ public class AdminService
         var totalPlatformCommission = await _context.Commissions
             .SumAsync(c => (decimal?)c.AdminShare) ?? 0;
 
-        // 3. Total artist earnings (Amount - AdminShare)
-        var commissions = await _context.Commissions.ToListAsync();
-        var totalArtistCommission = commissions.Sum(c => c.Amount - c.AdminShare);
+        // 3. Total artist earnings (chỉ tính đơn Delivered và IsPaid)
+        var deliveredOrderIds = await _context.Orders
+            .Where(o => o.Status == "Delivered")
+            .Select(o => o.OrderId)
+            .ToListAsync();
+
+        var deliveredCommissions = await _context.Commissions
+            .Where(c => deliveredOrderIds.Contains(c.OrderId) && c.IsPaid)
+            .ToListAsync();
+
+        var totalArtistCommission = deliveredCommissions.Sum(c => c.Amount - c.AdminShare);
 
         // 4. Best-selling products (sum of orderdetail.quantity grouped by product_id)
         var bestSellingProducts = await _context.Orderdetails
@@ -492,8 +500,8 @@ public class AdminService
             var cancelledOrders = orders.Count(o => o.Status == "CANCELLED" || o.Status == "Payment failed");
 
             // Calculate revenue
-            var totalRevenue = orders.Where(o => o.Status != "Cancelled").Sum(o => o.TotalAmount);
-            var totalShippingFees = orders.Where(o => o.Status != "Cancelled").Sum(o => o.ShippingFee);
+            var totalRevenue = orders.Where(o => o.Status != "Cancelled" && o.Status != "Payment failed").Sum(o => o.TotalAmount);
+            var totalShippingFees = orders.Where(o => o.Status != "Cancelled" && o.Status != "Payment failed").Sum(o => o.ShippingFee);
 
             // Get commissions for orders in the date range
             var orderIds = orders.Select(o => o.OrderId).ToList();
@@ -501,8 +509,12 @@ public class AdminService
                 .Where(c => orderIds.Contains(c.OrderId))
                 .ToListAsync();
 
+            // Get delivered orders for artist earnings calculation
+            var deliveredOrderIds = orders.Where(o => o.Status == "Delivered").Select(o => o.OrderId).ToList();
+            var deliveredCommissions = commissions.Where(c => deliveredOrderIds.Contains(c.OrderId) && c.IsPaid).ToList();
+
             var totalPlatformCommission = commissions.Sum(c => c.AdminShare);
-            var totalArtistEarnings = commissions.Sum(c => c.Amount - c.AdminShare);
+            var totalArtistEarnings = deliveredCommissions.Sum(c => c.Amount - c.AdminShare);
             var paidCommissions = commissions.Where(c => c.IsPaid).Sum(c => c.AdminShare);
             var unpaidCommissions = commissions.Where(c => !c.IsPaid).Sum(c => c.AdminShare);
 
