@@ -145,7 +145,21 @@ namespace ArtisanHubs.Bussiness.Services
                 // 6. Commit transaction trước khi gọi API ngoài
                 await transaction.CommitAsync();
 
-                // 7. Gọi PayOS để lấy link thanh toán
+                // Sau khi tạo Order thành công và commit transaction
+                var cart = await _dbContext.Carts
+                    .Include(c => c.CartItems)
+                    .FirstOrDefaultAsync(c => c.AccountId == request.AccountId);
+
+                if (cart != null)
+                {
+                    // Xóa tất cả CartItem
+                    _dbContext.CartItems.RemoveRange(cart.CartItems);
+
+                    // Xóa Cart
+                    _dbContext.Carts.Remove(cart);
+
+                    await _dbContext.SaveChangesAsync();
+                }
 
                 var paymentResult = await PayOSService.CreatePaymentLinkAsync(
                 orderCode.ToString(),
@@ -184,33 +198,18 @@ namespace ArtisanHubs.Bussiness.Services
             }
         }
 
-        public async Task<bool> UpdateOrderStatusAfterPaymentAsync(long orderCode, string paymentStatus)
+        public async Task<bool> UpdateOrderStatusAfterPaymentAsync(long orderCode)
         {
             var order = await _dbContext.Orders
                 .FirstOrDefaultAsync(o => o.OrderCode == orderCode);
 
             if (order == null) return false;
 
-            if (paymentStatus == "PAID")
+            if (order.Status == "PAID")
             {
-                order.Status = "Paid";
-                order.UpdatedAt = DateTime.UtcNow;
-
-                // 🔥 Gọi tạo hoa hồng cho đơn hàng đã thanh toán
                 decimal platformRate = decimal.Parse(_configuration["Commission:PlatformRate"] ?? "0.10");
                 await _adminSerivce.CreateCommissionForPaidOrderAsync(order.OrderId, platformRate);
             }
-            else if (paymentStatus == "CANCELLED")
-            {
-                order.Status = "Cancelled";
-                order.UpdatedAt = DateTime.UtcNow;
-            }
-            else
-            {
-                order.Status = "Payment failed";
-                order.UpdatedAt = DateTime.UtcNow;
-            }
-
             await _dbContext.SaveChangesAsync();
             return true;
         }
