@@ -144,8 +144,14 @@ public class AdminService
             .Include(o => o.Orderdetails)
             .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
-        if (order == null || order.Status != "Paid")
+        if (order == null || order.Status != "PAID")  // ✅ Sửa thành "PAID" để khớp với FE
             return false;
+
+        // ✅ Check xem đã tạo commission cho order này chưa (tránh trùng)
+        var existingCommissions = await _context.Commissions
+            .AnyAsync(c => c.OrderId == orderId);
+        if (existingCommissions)
+            return true; // Đã có commission rồi, không tạo nữa
 
         foreach (var detail in order.Orderdetails)
         {
