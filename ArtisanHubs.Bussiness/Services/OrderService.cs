@@ -460,6 +460,7 @@ namespace ArtisanHubs.Bussiness.Services
                     .Include(o => o.Orderdetails)
                         .ThenInclude(od => od.Product)
                             .ThenInclude(p => p.Artist)
+                    .Include(o => o.Account)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(o => o.OrderId == orderId && o.AccountId == accountId);
 
@@ -502,6 +503,8 @@ namespace ArtisanHubs.Bussiness.Services
                     ShippingFee = order.ShippingFee,
                     TotalAmount = order.TotalAmount,
                     ShippingAddress = order.ShippingAddress ?? "",
+                    CustomerName = order.Account?.Username ?? "",
+                    CustomerPhone = order.Account?.Phone ?? "",
                     CreatedAt = order.CreatedAt,
                     UpdatedAt = order.UpdatedAt,
                     OrderItems = orderItems,
