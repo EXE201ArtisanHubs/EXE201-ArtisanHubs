@@ -560,5 +560,62 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
                 return ApiResponse<ArtistOrderResponse>.FailResponse($"Error: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Artist cập nhật trạng thái đơn hàng của mình
+        /// Chỉ cho phép: PAID → Processing → Shipping
+        /// </summary>
+        public async Task<ApiResponse<object>> UpdateOrderStatusAsync(int artistId, int orderId, string newStatus)
+        {
+            try
+            {
+                // Validate status
+                var allowedStatuses = new[] { "Processing", "Shipping" };
+                if (!allowedStatuses.Contains(newStatus))
+                    return ApiResponse<object>.FailResponse("Invalid status. Allowed: Processing, Shipping", 400);
+
+                // Lấy order
+                var order = await _context.Orders
+                    .Include(o => o.Orderdetails)
+                    .ThenInclude(od => od.Product)
+                    .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+                if (order == null)
+                    return ApiResponse<object>.FailResponse("Order not found", 404);
+
+                // Kiểm tra order có sản phẩm của artist này không
+                var hasArtistProduct = order.Orderdetails.Any(od => od.Product.ArtistId == artistId);
+                if (!hasArtistProduct)
+                    return ApiResponse<object>.FailResponse("This order does not contain your products", 403);
+
+                // Validate state transition
+                var validTransitions = new Dictionary<string, string[]>
+                {
+                    { "PAID", new[] { "Processing" } },
+                    { "Processing", new[] { "Shipping" } },
+                    { "Shipping", new string[] { } } // Không được chuyển từ Shipping
+                };
+
+                if (!validTransitions.ContainsKey(order.Status))
+                    return ApiResponse<object>.FailResponse($"Cannot update from current status: {order.Status}", 400);
+
+                if (!validTransitions[order.Status].Contains(newStatus))
+                    return ApiResponse<object>.FailResponse($"Cannot change from {order.Status} to {newStatus}", 400);
+
+                // Cập nhật status
+                order.Status = newStatus;
+                order.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                return ApiResponse<object>.SuccessResponse(
+                    new { OrderId = orderId, NewStatus = newStatus },
+                    "Order status updated successfully"
+                );
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.FailResponse($"Error: {ex.Message}");
+            }
+        }
     }
 }

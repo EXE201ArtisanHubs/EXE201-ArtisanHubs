@@ -951,4 +951,61 @@ public class AdminService
             return ApiResponse<OrderStatusDistributionResponse>.FailResponse($"Error: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Chuyển tiền từ PendingBalance sang Balance cho Artist khi customer xác nhận đã nhận hàng
+    /// </summary>
+    public async Task<bool> ReleaseCommissionToArtistAsync(int orderId)
+    {
+        try
+        {
+            // Lấy tất cả commission chưa trả của đơn hàng này
+            var commissions = await _context.Commissions
+                .Where(c => c.OrderId == orderId && !c.IsPaid)
+                .ToListAsync();
+
+            if (!commissions.Any())
+                return false; // Không có commission nào hoặc đã trả hết rồi
+
+            foreach (var commission in commissions)
+            {
+                // Tìm ví của artist
+                var wallet = await _context.Artistwallets
+                    .FirstOrDefaultAsync(w => w.ArtistId == commission.ArtistId);
+
+                if (wallet != null)
+                {
+                    // Tính tiền artist nhận được (Amount - AdminShare)
+                    decimal artistEarning = commission.Amount - commission.AdminShare;
+
+                    // Chuyển từ PendingBalance sang Balance
+                    wallet.PendingBalance -= artistEarning;
+                    wallet.Balance += artistEarning;
+
+                    // Đánh dấu commission đã trả
+                    commission.IsPaid = true;
+
+                    // Tạo transaction log
+                    var transaction = new Wallettransaction
+                    {
+                        WalletId = wallet.WalletId,
+                        Amount = artistEarning,
+                        TransactionType = "commission_released", // Loại mới: chuyển từ pending sang balance
+                        CommissionId = commission.CommissionId,
+                        Status = "Completed",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Wallettransactions.Add(transaction);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            // Log error if needed
+            return false;
+        }
+    }
 }
