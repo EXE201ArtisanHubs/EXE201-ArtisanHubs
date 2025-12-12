@@ -89,7 +89,7 @@ builder.Services.AddScoped<IForumPostService, ForumPostService>();
 builder.Services.AddScoped<IFavoriteProductRepository, FavoriteProductRepository>();
 builder.Services.AddScoped<IFavoriteProductService, FavoriteProductService>();
 
-// ?? ??ng ký ForumNotificationService
+// ?? ??ng kï¿½ ForumNotificationService
 builder.Services.AddScoped<IForumNotificationService, ForumNotificationService>();
 
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
@@ -114,7 +114,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// ?? Thêm SignalR
+// ?? Thï¿½m SignalR
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true;
@@ -142,6 +142,7 @@ builder.Services.AddCors(options =>
                 .WithOrigins(
                     "http://localhost:5173",
                     "https://localhost:5173",
+                    "https://artisan-hub-project.vercel.app",
                     "https://artisanhubs.azurewebsites.net"
                 )
                 .AllowAnyHeader()
