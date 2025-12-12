@@ -110,36 +110,13 @@ public class AdminService
         withdrawRequest.Status = "Approved";
         withdrawRequest.ApprovedAt = DateTime.UtcNow;
 
-        // Find unpaid commissions for the artist
-        var unpaidCommissions = await _context.Commissions
-            .Where(c => c.ArtistId == withdrawRequest.ArtistId && !c.IsPaid)
-            .OrderBy(c => c.CreatedAt)
-            .ToListAsync();
+        // Cập nhật transaction log
+        var walletTransaction = await _context.Wallettransactions
+            .FirstOrDefaultAsync(t => t.WithdrawId == withdrawRequestId && t.Status == "Pending");
 
-        decimal toPay = withdrawRequest.Amount;
-        foreach (var commission in unpaidCommissions)
+        if (walletTransaction != null)
         {
-            if (toPay <= 0) break;
-            commission.IsPaid = true;
-            toPay -= commission.Amount;
-
-            var wallet = await _context.Artistwallets.FirstOrDefaultAsync(w => w.ArtistId == commission.ArtistId);
-            if (wallet != null)
-            {
-                wallet.PendingBalance -= commission.Amount;
-                wallet.Balance += commission.Amount;
-
-                var walletTransaction = new Wallettransaction
-                {
-                    WalletId = wallet.WalletId,
-                    Amount = commission.Amount,
-                    TransactionType = "commission_paid",
-                    CommissionId = commission.CommissionId,
-                    Status = "Completed",
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.Wallettransactions.Add(walletTransaction);
-            }
+            walletTransaction.Status = "Completed";
         }
 
         await _context.SaveChangesAsync();
