@@ -136,21 +136,28 @@ public class AdminService
             .ToListAsync();
     }
 
-    public async Task<bool> ApproveWithdrawRequestAsync(int withdrawRequestId)
+    public async Task<ApiResponse<object>> ApproveWithdrawRequestAsync(int withdrawRequestId)
     {
         var withdrawRequest = await _context.Withdrawrequests
             .Include(w => w.Artist)
+                .ThenInclude(a => a.Account)
             .FirstOrDefaultAsync(w => w.WithdrawId == withdrawRequestId);
 
-        if (withdrawRequest == null || withdrawRequest.Status != "Pending")
-            return false;
+        if (withdrawRequest == null)
+            return ApiResponse<object>.FailResponse("Withdraw request not found.", 404);
+
+        if (withdrawRequest.Status != "Pending")
+            return ApiResponse<object>.FailResponse($"Cannot approve withdraw request with status '{withdrawRequest.Status}'. Only 'Pending' requests can be approved.", 400);
 
         // Tìm ví của artist
         var wallet = await _context.Artistwallets
             .FirstOrDefaultAsync(w => w.ArtistId == withdrawRequest.ArtistId);
 
-        if (wallet == null || wallet.Balance < withdrawRequest.Amount)
-            return false; // Không đủ tiền hoặc không tìm thấy ví
+        if (wallet == null)
+            return ApiResponse<object>.FailResponse("Artist wallet not found.", 404);
+
+        if (wallet.Balance < withdrawRequest.Amount)
+            return ApiResponse<object>.FailResponse($"Insufficient balance. Current balance: {wallet.Balance}, Requested amount: {withdrawRequest.Amount}", 400);
 
         // Trừ tiền khi approve
         wallet.Balance -= withdrawRequest.Amount;
@@ -172,7 +179,19 @@ public class AdminService
         _context.Wallettransactions.Add(walletTransaction);
 
         await _context.SaveChangesAsync();
-        return true;
+        
+        return ApiResponse<object>.SuccessResponse(
+            new 
+            {
+                withdrawId = withdrawRequestId,
+                artistName = withdrawRequest.Artist?.Account?.Username,
+                amount = withdrawRequest.Amount,
+                approvedAt = withdrawRequest.ApprovedAt,
+                newBalance = wallet.Balance
+            },
+            "Withdraw request approved successfully.",
+            200
+        );
     }
 
     public async Task<bool> CreateCommissionForPaidOrderAsync(int orderId, decimal platformRate)
