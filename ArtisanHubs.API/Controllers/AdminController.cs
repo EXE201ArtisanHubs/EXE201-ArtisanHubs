@@ -36,10 +36,8 @@ public class AdminController : ControllerBase
     [HttpPost("WithdrawRequests/Approve/{withdrawRequestId}")]
     public async Task<IActionResult> ApproveWithdrawRequest(int withdrawRequestId)
     {
-        var success = await _adminService.ApproveWithdrawRequestAsync(withdrawRequestId);
-        if (!success)
-            return BadRequest("Unable to approve withdrawal request.");
-        return Ok("Withdrawal request approved.");
+        var result = await _adminService.ApproveWithdrawRequestAsync(withdrawRequestId);
+        return StatusCode(result.StatusCode, result);
     }
 
     [HttpGet("artist-wallet/{artistId}")]

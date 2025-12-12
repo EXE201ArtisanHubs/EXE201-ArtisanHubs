@@ -165,8 +165,8 @@ namespace ArtisanHubs.Bussiness.Services
                 orderCode.ToString(),
                 totalAmount,
                 "Order Payment",
-                "https://localhost:5173/",
-                "https://localhost:5173/"
+                "https://artisan-hub-project.vercel.app",
+                "https://artisan-hub-project.vercel.app"
                 );
 
 
