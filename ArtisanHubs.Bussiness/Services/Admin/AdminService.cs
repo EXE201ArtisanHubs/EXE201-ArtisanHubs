@@ -83,12 +83,51 @@ public class AdminService
         };
     }
 
-    public async Task<List<Withdrawrequest>> GetPendingWithdrawRequestsAsync()
+    public async Task<List<WithdrawRequestResponse>> GetPendingWithdrawRequestsAsync()
     {
-        return await _context.Withdrawrequests
+        var pendingRequests = await _context.Withdrawrequests
             .Where(w => w.Status == "Pending")
             .Include(w => w.Artist)
+                .ThenInclude(a => a.Account)
+            .Include(w => w.Artist)
+                .ThenInclude(a => a.Artistwallet)
             .ToListAsync();
+
+        var results = new List<WithdrawRequestResponse>();
+
+        foreach (var request in pendingRequests)
+        {
+            // Get total withdraw history
+            var withdrawHistory = await _context.Withdrawrequests
+                .Where(w => w.ArtistId == request.ArtistId && w.Status == "Approved")
+                .ToListAsync();
+
+            var wallet = request.Artist.Artistwallet;
+
+            results.Add(new WithdrawRequestResponse
+            {
+                WithdrawId = request.WithdrawId,
+                ArtistId = request.ArtistId,
+                ArtistName = request.Artist.Account?.Username ?? "Unknown",
+                ArtistEmail = request.Artist.Account?.Email ?? "Unknown",
+                ArtistPhone = request.Artist.Account?.Phone,
+                Amount = request.Amount,
+                BankName = request.BankName,
+                AccountHolder = request.AccountHolder,
+                AccountNumber = request.AccountNumber,
+                Status = request.Status,
+                RequestedAt = request.RequestedAt,
+                ApprovedAt = request.ApprovedAt,
+                PaidAt = request.PaidAt,
+                CurrentWalletBalance = wallet?.Balance ?? 0,
+                PendingBalance = wallet?.PendingBalance ?? 0,
+                TotalBalance = (wallet?.Balance ?? 0) + (wallet?.PendingBalance ?? 0),
+                TotalWithdrawRequests = withdrawHistory.Count,
+                TotalWithdrawnAmount = withdrawHistory.Sum(w => w.Amount)
+            });
+        }
+
+        return results;
     }
     public async Task<List<Commission>> GetUnpaidCommissionsAsync(int artistId)
     {
@@ -106,18 +145,31 @@ public class AdminService
         if (withdrawRequest == null || withdrawRequest.Status != "Pending")
             return false;
 
+        // Tìm ví của artist
+        var wallet = await _context.Artistwallets
+            .FirstOrDefaultAsync(w => w.ArtistId == withdrawRequest.ArtistId);
+
+        if (wallet == null || wallet.Balance < withdrawRequest.Amount)
+            return false; // Không đủ tiền hoặc không tìm thấy ví
+
+        // Trừ tiền khi approve
+        wallet.Balance -= withdrawRequest.Amount;
+
         // Mark as approved
         withdrawRequest.Status = "Approved";
         withdrawRequest.ApprovedAt = DateTime.UtcNow;
 
-        // Cập nhật transaction log
-        var walletTransaction = await _context.Wallettransactions
-            .FirstOrDefaultAsync(t => t.WithdrawId == withdrawRequestId && t.Status == "Pending");
-
-        if (walletTransaction != null)
+        // Tạo transaction log
+        var walletTransaction = new Wallettransaction
         {
-            walletTransaction.Status = "Completed";
-        }
+            WalletId = wallet.WalletId,
+            Amount = -withdrawRequest.Amount,
+            TransactionType = "withdraw_approved",
+            WithdrawId = withdrawRequestId,
+            Status = "Completed",
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Wallettransactions.Add(walletTransaction);
 
         await _context.SaveChangesAsync();
         return true;
