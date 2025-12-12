@@ -268,8 +268,8 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
             _context.Withdrawrequests.Add(withdrawRequest);
             await _context.SaveChangesAsync(); // Để lấy WithdrawId
 
-            wallet.PendingBalance += amount;
-            wallet.CreatedAt = DateTime.UtcNow;
+            // Trừ balance khi tạo withdraw request
+            wallet.Balance -= amount;
 
             var walletTransaction = new Wallettransaction
             {
