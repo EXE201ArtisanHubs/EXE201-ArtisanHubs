@@ -266,22 +266,6 @@ namespace ArtisanHubs.Bussiness.Services.ArtistProfiles.Implements
                 RequestedAt = DateTime.UtcNow
             };
             _context.Withdrawrequests.Add(withdrawRequest);
-            await _context.SaveChangesAsync(); // Để lấy WithdrawId
-
-            // Trừ balance khi tạo withdraw request
-            wallet.Balance -= amount;
-
-            var walletTransaction = new Wallettransaction
-            {
-                WalletId = wallet.WalletId,
-                Amount = -amount,
-                TransactionType = "withdraw_request",
-                WithdrawId = withdrawRequest.WithdrawId,
-                Status = "Pending",
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.Wallettransactions.Add(walletTransaction);
-
             await _context.SaveChangesAsync();
             return true;
         }
